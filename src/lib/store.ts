@@ -7,59 +7,33 @@ import {
   AuditLogEntry 
 } from '@/types';
 import { hashPasswordSync } from '@/lib/security';
+import {
+  INITIAL_SETTINGS,
+  DEMO_USERS,
+  DEMO_STUDENTS,
+  DEMO_ATTENDANCE,
+  DEMO_REVIEWS,
+  DEMO_ACTIVITIES,
+  DEMO_RESULTS,
+  DEMO_INVOICES,
+  DEMO_NOTICES,
+  DEMO_ENQUIRIES,
+  INITIAL_AUDIT_LOGS,
+} from '@/lib/initialData';
 
-// Default initial settings
-export const INITIAL_SETTINGS: SchoolSettings = {
-  schoolName: "London Kids Preschool Avalurpet",
-  tagline: "Nurturing Little Minds with Love, Play & Wonder",
-  address: "Main Road, Near Bus Stand, Avalurpet",
-  cityState: "Avalurpet, Tamil Nadu – 606 702",
-  phone: "+91 90436 33545",
-  email: "londonkidsavalurpet@gmail.com",
-  registrationNo: "PRE-2024-TN-8842",
-  academicYear: "2026-2027",
-  timings: "8:30 AM - 1:30 PM (Extended care till 5:00 PM)",
-  fees: {
-    PLAY_SCHOOL: 18000,
-    NURSERY: 22000,
-    LKG: 26000,
-    UKG: 30000
-  }
+export {
+  INITIAL_SETTINGS,
+  DEMO_USERS,
+  DEMO_STUDENTS,
+  DEMO_ATTENDANCE,
+  DEMO_REVIEWS,
+  DEMO_ACTIVITIES,
+  DEMO_RESULTS,
+  DEMO_INVOICES,
+  DEMO_NOTICES,
+  DEMO_ENQUIRIES,
+  INITIAL_AUDIT_LOGS,
 };
-
-// Official Initial Accounts (No fake profiles)
-export const DEMO_USERS: User[] = [
-  {
-    id: 'user-owner-londonkids',
-    name: 'School Director',
-    email: 'londonkids276@gmail.com',
-    personalEmail: 'londonkids276@gmail.com',
-    role: 'OWNER',
-    phone: '+91 90436 33545',
-    employeeId: 'EMP-LK-OWNER',
-    address: 'Main Road, Avalurpet, Tamil Nadu – 606 702',
-    dateOfJoining: '2024-01-01',
-    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    status: 'ACTIVE',
-    createdAt: '2026-09-19',
-    updatedAt: '2026-09-19',
-    passwordHash: hashPasswordSync('90436 33545'),
-    emailVerified: true,
-    mustChangePassword: true
-  }
-];
-
-// Clean empty arrays for a completely fresh deployment
-export const DEMO_STUDENTS: Student[] = [];
-export const DEMO_ATTENDANCE: AttendanceRecord[] = [];
-export const DEMO_REVIEWS: TeacherReview[] = [];
-export const DEMO_ACTIVITIES: ActivityPost[] = [];
-export const DEMO_RESULTS: StudentResult[] = [];
-export const DEMO_INVOICES: FeeInvoice[] = [];
-export const DEMO_NOTICES: Notice[] = [];
-export const DEMO_ENQUIRIES: AdmissionEnquiry[] = [];
-export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [];
 
 // Storage Helper Functions with LocalStorage Sync
 const STORAGE_KEY = 'londonkids_preschool_db_v1';
@@ -79,6 +53,55 @@ export interface AppStoreData {
   currentUser: User | null;
 }
 
+let isSyncing = false;
+let hasInitialSynced = false;
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+let pendingSyncData: Partial<AppStoreData> = {};
+
+/**
+ * Transparent background synchronization with MongoDB via /api/db/sync
+ */
+export async function syncWithDatabase(): Promise<void> {
+  if (typeof window === 'undefined' || isSyncing) return;
+  isSyncing = true;
+
+  try {
+    const res = await fetch('/api/db/sync');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    if (json && json.success && json.data) {
+      const dbData = json.data;
+      const current = getStore();
+
+      // Merge MongoDB data with local storage
+      const merged: AppStoreData = {
+        ...current,
+        settings: dbData.settings || current.settings,
+        users: dbData.users && dbData.users.length > 0 ? dbData.users : current.users,
+        students: dbData.students || current.students,
+        attendance: dbData.attendance || current.attendance,
+        reviews: dbData.reviews || current.reviews,
+        activities: dbData.activities || current.activities,
+        results: dbData.results || current.results,
+        invoices: dbData.invoices || current.invoices,
+        notices: dbData.notices || current.notices,
+        enquiries: dbData.enquiries || current.enquiries,
+        auditLogs: dbData.auditLogs || current.auditLogs,
+        currentUser: current.currentUser, // Keep local user session intact
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      window.dispatchEvent(new Event('preschool_store_updated'));
+    }
+  } catch (err) {
+    console.warn('Background database sync deferred (offline or starting up):', err);
+  } finally {
+    isSyncing = false;
+    hasInitialSynced = true;
+  }
+}
+
 export function getStore(): AppStoreData {
   if (typeof window === 'undefined') {
     return {
@@ -93,8 +116,15 @@ export function getStore(): AppStoreData {
       notices: DEMO_NOTICES,
       enquiries: DEMO_ENQUIRIES,
       auditLogs: INITIAL_AUDIT_LOGS,
-      currentUser: null
+      currentUser: null,
     };
+  }
+
+  // Trigger background sync if not yet run
+  if (!hasInitialSynced && !isSyncing) {
+    setTimeout(() => {
+      syncWithDatabase();
+    }, 100);
   }
 
   try {
@@ -112,7 +142,7 @@ export function getStore(): AppStoreData {
         notices: DEMO_NOTICES,
         enquiries: DEMO_ENQUIRIES,
         auditLogs: INITIAL_AUDIT_LOGS,
-        currentUser: null
+        currentUser: null,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
       return initial;
@@ -203,34 +233,51 @@ export function getStore(): AppStoreData {
       parsed.users = DEMO_USERS;
     }
 
-    if (parsed.students && Array.isArray(parsed.students)) {
+    if (parsed.students && Array.isArray(parsed.students) && parsed.students.length > 0) {
       parsed.students = parsed.students.filter((s: any) => !FAKE_STUDENT_PREFIXES.some(prefix => s.id?.startsWith(prefix)));
+      if (parsed.students.length === 0) parsed.students = DEMO_STUDENTS;
     } else {
-      parsed.students = [];
+      parsed.students = DEMO_STUDENTS;
     }
 
-    if (parsed.attendance && Array.isArray(parsed.attendance)) {
+    if (parsed.attendance && Array.isArray(parsed.attendance) && parsed.attendance.length > 0) {
       parsed.attendance = parsed.attendance.filter((a: any) => !FAKE_STUDENT_PREFIXES.some(prefix => a.studentId?.startsWith(prefix)));
+      if (parsed.attendance.length === 0) parsed.attendance = DEMO_ATTENDANCE;
     } else {
-      parsed.attendance = [];
+      parsed.attendance = DEMO_ATTENDANCE;
     }
 
-    if (parsed.reviews && Array.isArray(parsed.reviews)) {
+    if (parsed.reviews && Array.isArray(parsed.reviews) && parsed.reviews.length > 0) {
       parsed.reviews = parsed.reviews.filter((r: any) => !FAKE_STUDENT_PREFIXES.some(prefix => r.studentId?.startsWith(prefix)));
+      if (parsed.reviews.length === 0) parsed.reviews = DEMO_REVIEWS;
     } else {
-      parsed.reviews = [];
+      parsed.reviews = DEMO_REVIEWS;
     }
 
-    if (parsed.results && Array.isArray(parsed.results)) {
+    if (parsed.results && Array.isArray(parsed.results) && parsed.results.length > 0) {
       parsed.results = parsed.results.filter((r: any) => !FAKE_STUDENT_PREFIXES.some(prefix => r.studentId?.startsWith(prefix)));
+      if (parsed.results.length === 0) parsed.results = DEMO_RESULTS;
     } else {
-      parsed.results = [];
+      parsed.results = DEMO_RESULTS;
     }
 
-    if (parsed.invoices && Array.isArray(parsed.invoices)) {
+    if (parsed.invoices && Array.isArray(parsed.invoices) && parsed.invoices.length > 0) {
       parsed.invoices = parsed.invoices.filter((i: any) => !FAKE_STUDENT_PREFIXES.some(prefix => i.studentId?.startsWith(prefix)));
+      if (parsed.invoices.length === 0) parsed.invoices = DEMO_INVOICES;
     } else {
-      parsed.invoices = [];
+      parsed.invoices = DEMO_INVOICES;
+    }
+
+    if (!parsed.notices || !Array.isArray(parsed.notices) || parsed.notices.length === 0) {
+      parsed.notices = DEMO_NOTICES;
+    }
+
+    if (!parsed.activities || !Array.isArray(parsed.activities) || parsed.activities.length === 0) {
+      parsed.activities = DEMO_ACTIVITIES;
+    }
+
+    if (!parsed.enquiries || !Array.isArray(parsed.enquiries) || parsed.enquiries.length === 0) {
+      parsed.enquiries = DEMO_ENQUIRIES;
     }
 
     if (parsed.currentUser) {
@@ -284,7 +331,8 @@ export function saveStore(data: Partial<AppStoreData>) {
   try {
     const current = getStore();
     const updated = { ...current, ...data };
-    // Guarantee no raw password is ever serialized to localStorage
+    
+    // Guarantee no raw password is ever serialized
     if (updated.currentUser) {
       const { password: _p, ...cleanCurrentUser } = updated.currentUser as any;
       updated.currentUser = cleanCurrentUser;
@@ -295,9 +343,31 @@ export function saveStore(data: Partial<AppStoreData>) {
         return cleanUser;
       });
     }
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     // Dispatch custom event for cross-component reactivity
     window.dispatchEvent(new Event('preschool_store_updated'));
+
+    // Queue asynchronous background sync to MongoDB
+    pendingSyncData = { ...pendingSyncData, ...data };
+    delete (pendingSyncData as any).currentUser; // Do not persist active browser session to global DB sync
+
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+      const payload = { ...pendingSyncData };
+      pendingSyncData = {};
+      if (Object.keys(payload).length === 0) return;
+
+      try {
+        await fetch('/api/db/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.warn('Background database write deferred (offline or starting up):', err);
+      }
+    }, 300);
   } catch (e) {
     console.error('Error saving store to localStorage', e);
   }
@@ -307,4 +377,12 @@ export function resetStoreToDefaults() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEY);
   window.dispatchEvent(new Event('preschool_store_updated'));
+  syncWithDatabase();
+}
+
+// Automatically initiate sync on client mount
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    syncWithDatabase();
+  }, 100);
 }

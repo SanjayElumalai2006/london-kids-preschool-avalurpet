@@ -102,7 +102,17 @@ export default function EnquiryPage() {
       status: 'NEW' as const,
     };
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      try {
+        await fetch('/api/enquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(enquiryPayload),
+        });
+      } catch (err) {
+        console.warn('Direct MongoDB enquiry endpoint deferred (offline fallback active):', err);
+      }
+
       const store = getStore();
       saveStore({
         enquiries: [enquiryPayload, ...store.enquiries],
@@ -123,7 +133,7 @@ export default function EnquiryPage() {
         });
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       }
-    }, 600);
+    }, 400);
   };
 
   const directWhatsAppUrl = getWhatsAppEnquiryUrl({

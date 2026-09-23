@@ -1,0 +1,11 @@
+export { default as UserModel, UserModel as User } from './User';
+export { default as StudentModel, StudentModel as Student } from './Student';
+export { default as AdmissionEnquiryModel, AdmissionEnquiryModel as AdmissionEnquiry } from './AdmissionEnquiry';
+export { default as SchoolSettingsModel, SchoolSettingsModel as SchoolSettings } from './SchoolSettings';
+export { default as AttendanceModel, AttendanceModel as Attendance } from './Attendance';
+export { default as NoticeModel, NoticeModel as Notice } from './Notice';
+export { default as TeacherReviewModel, TeacherReviewModel as TeacherReview } from './TeacherReview';
+export { default as FeeInvoiceModel, FeeInvoiceModel as FeeInvoice } from './FeeInvoice';
+export { default as ActivityPostModel, ActivityPostModel as ActivityPost } from './ActivityPost';
+export { default as StudentResultModel, StudentResultModel as StudentResult } from './StudentResult';
+export { default as AuditLogModel, AuditLogModel as AuditLog } from './AuditLog';

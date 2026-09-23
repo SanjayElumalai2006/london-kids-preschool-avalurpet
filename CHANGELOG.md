@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-23
+
+### Added
+- **MongoDB Database Integration & Bidirectional Background Sync**:
+  - Full MongoDB persistence with Mongoose models across 11 core collections: `schoolsettings`, `users`, `students`, `attendances`, `teacherreviews`, `activityposts`, `studentresults`, `feeinvoices`, `notices`, `admissionenquiries`, and `auditlogs`.
+  - Bidirectional background sync endpoint (`/api/db/sync`) with transparent local storage caching and automatic offline fallback.
+  - Dedicated direct admission enquiry endpoint (`/api/enquiry`) saving web inquiries directly to MongoDB.
+  - Standalone comprehensive database seeder & revival utility (`scripts/seed-db.js`, `npm run db:seed`).
+  - Windows one-click local server launcher (`start-server.bat`) with automated MongoDB service health check.
+
+---
+
 ## [1.0.0] - 2026-09-21
 
 ### Added
