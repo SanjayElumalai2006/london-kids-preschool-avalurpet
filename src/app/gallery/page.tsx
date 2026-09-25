@@ -50,7 +50,7 @@ export default function GalleryPage() {
     return () => window.removeEventListener('preschool_store_updated', loadPhotos);
   }, []);
 
-  const isStaff = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN' || currentUserRole === 'TEACHER';
+  const isStaff = currentUserRole === 'OWNER' || currentUserRole === 'PRINCIPAL' || currentUserRole === 'ADMIN' || currentUserRole === 'TEACHER';
 
   const visible = active === 'ALL' ? photos : photos.filter(i => i.category === active);
 

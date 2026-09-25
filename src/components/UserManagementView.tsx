@@ -551,6 +551,8 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
     switch (role) {
       case 'OWNER':
         return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'PRINCIPAL':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'ADMIN':
         return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'TEACHER':
@@ -715,6 +717,7 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
                 >
                   <option value="ALL">All Roles</option>
                   <option value="OWNER">Owner</option>
+                  <option value="PRINCIPAL">Principal</option>
                   <option value="ADMIN">Admin</option>
                   <option value="TEACHER">Teacher / Faculty</option>
                   <option value="STAFF">Staff</option>
@@ -1029,6 +1032,7 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
                     onChange={e => setEnrollForm({ ...enrollForm, role: e.target.value as UserRole })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-400 bg-white"
                   >
+                    <option value="PRINCIPAL">Principal / Head of Institution</option>
                     <option value="TEACHER">Teacher / Faculty</option>
                     <option value="STAFF">Staff (Support / Transport / Daycare)</option>
                     <option value="ADMIN">Administrator</option>
@@ -1133,8 +1137,8 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Employee ID (for Staff/Faculty/Admin/Owner) */}
-                {['OWNER', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role) && (
+                {/* Employee ID (for Principal/Staff/Faculty/Admin/Owner) */}
+                {['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role) && (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
                       Employee ID *
@@ -1584,6 +1588,7 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold bg-white"
                   >
                     <option value="OWNER">Owner</option>
+                    <option value="PRINCIPAL">Principal</option>
                     <option value="ADMIN">Admin</option>
                     <option value="TEACHER">Teacher</option>
                     <option value="STAFF">Staff</option>

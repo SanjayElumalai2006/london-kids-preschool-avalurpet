@@ -1,4 +1,4 @@
-export type UserRole = 'OWNER' | 'ADMIN' | 'TEACHER' | 'STAFF' | 'PARENT' | 'STUDENT';
+export type UserRole = 'OWNER' | 'PRINCIPAL' | 'ADMIN' | 'TEACHER' | 'STAFF' | 'PARENT' | 'STUDENT';
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'REMOVED';
 

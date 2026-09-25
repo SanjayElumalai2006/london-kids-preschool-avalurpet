@@ -25,7 +25,7 @@ const AuditLogSchema = new Schema<IAuditLogDocument>(
     targetUserName: { type: String, required: true },
     targetUserRole: {
       type: String,
-      enum: ['OWNER', 'ADMIN', 'TEACHER', 'STAFF', 'PARENT', 'STUDENT'],
+      enum: ['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF', 'PARENT', 'STUDENT'],
       required: true,
     },
     performedBy: { type: String, required: true },

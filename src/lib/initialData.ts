@@ -40,6 +40,46 @@ export const DEMO_USERS: User[] = [
     emailVerified: true,
     mustChangePassword: false
   },
+  // Principal
+  {
+    id: 'user-principal-londonkids',
+    name: 'Dr. R. Arumugam (Principal)',
+    email: 'principal.londonkids@gmail.com',
+    personalEmail: 'principal.londonkids@gmail.com',
+    role: 'PRINCIPAL',
+    phone: '+91 94432 18899',
+    employeeId: 'EMP-LK-PRIN01',
+    address: 'Administrative Quarters, Avalurpet, Tamil Nadu – 606 702',
+    dateOfJoining: '2024-01-15',
+    photo: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
+    status: 'ACTIVE',
+    createdAt: '2026-09-19',
+    updatedAt: '2026-09-19',
+    passwordHash: hashPasswordSync('principal123'),
+    emailVerified: true,
+    mustChangePassword: false
+  },
+  // Campus Administrator
+  {
+    id: 'user-admin-londonkids',
+    name: 'Mr. Saravanan K (Campus Admin)',
+    email: 'admin.londonkids@gmail.com',
+    personalEmail: 'admin.londonkids@gmail.com',
+    role: 'ADMIN',
+    phone: '+91 98409 88776',
+    employeeId: 'EMP-LK-ADM01',
+    address: 'Main Campus Admin Block, Avalurpet, Tamil Nadu',
+    dateOfJoining: '2024-02-01',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+    status: 'ACTIVE',
+    createdAt: '2026-09-19',
+    updatedAt: '2026-09-19',
+    passwordHash: hashPasswordSync('admin123'),
+    emailVerified: true,
+    mustChangePassword: false
+  },
   // Teacher 1: Play School & Nursery
   {
     id: 'user-teacher-kavitha',

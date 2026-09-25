@@ -37,7 +37,7 @@ const UserSchema = new Schema<IUserDocument>(
     personalEmail: { type: String, index: true },
     role: { 
       type: String, 
-      enum: ['OWNER', 'ADMIN', 'TEACHER', 'STAFF', 'PARENT', 'STUDENT'], 
+      enum: ['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF', 'PARENT', 'STUDENT'], 
       required: true 
     },
     phone: { type: String, required: true, index: true },
