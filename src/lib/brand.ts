@@ -44,9 +44,21 @@ export const SCHOOL_OFFICE_HR = 'Office: 8:00 AM – 5:00 PM';
 
 // Credentials are never stored statically in code. All accounts use secure verification.
 
+// ── School Leadership ────────────────────────────────────────────────────────
+export const PRINCIPAL_NAME         = 'Dr. R. Arumugam';
+export const PRINCIPAL_DESIGNATION  = 'Principal & Head of Institution';
+export const PRINCIPAL_DEGREE       = 'Ph.D., M.Ed., Early Childhood Education';
+export const PRINCIPAL_PHONE        = '+91 94432 18899';
+export const PRINCIPAL_EMAIL        = 'principal.londonkids@gmail.com';
+export const PRINCIPAL_MESSAGE      = 'At London Kids Preschool Avalurpet, our mission is to provide an inspiring, safe, and nurturing environment where every toddler discovers their unique brilliance through experiential play and compassionate guidance.';
+
+export const DIRECTOR_NAME          = 'Mrs. Lakshmi Priya';
+export const DIRECTOR_DESIGNATION   = 'Founder & Managing Director';
+
 // ── Social links ──────────────────────────────────────────────────────────────
 export const SOCIAL = {
   facebook:  'https://www.facebook.com/londonkidsavalurpet',
   instagram: 'https://www.instagram.com/londonkidsavalurpet',
   youtube:   'https://www.youtube.com/@londonkidsavalurpet',
 };
+

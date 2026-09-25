@@ -11,7 +11,7 @@ import {
 } from '@/lib/brand';
 
 const NAV_LINKS = [
-  { href: '/#about',        label: 'About' },
+  { href: '/about',         label: 'About & Leadership' },
   { href: '/#programs',     label: 'Programs' },
   { href: '/#facilities',   label: 'Facilities' },
   { href: '/gallery',       label: 'Gallery' },
@@ -32,6 +32,10 @@ export default function Navbar() {
             <strong>Admissions Open 2026-27</strong>: Play School · Nursery · LKG · UKG
           </span>
           <div className="hidden sm:flex items-center gap-4">
+            <Link href="/about#principal-desk" className="flex items-center gap-1 opacity-95 hover:underline text-amber-200 font-bold">
+              <span>🎓 Principal Desk</span>
+            </Link>
+            <span className="opacity-50">|</span>
             <span className="flex items-center gap-1.5 opacity-90">
               <Phone size={13} /> {SCHOOL_PHONE}
             </span>

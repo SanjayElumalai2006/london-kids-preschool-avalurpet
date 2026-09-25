@@ -297,6 +297,73 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── From the Desk of the Principal (Homepage Spotlight) ── */}
+      <section className="py-16 bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white relative overflow-hidden border-b-4 border-amber-400">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 sm:p-10 border border-white/10 shadow-2xl flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Principal Photo & Designation Badge */}
+            <div className="shrink-0 flex flex-col items-center text-center">
+              <div className="relative">
+                <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden border-4 border-amber-400 shadow-xl bg-slate-800">
+                  <img
+                    src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&fit=crop&q=80"
+                    alt="Dr. R. Arumugam, Principal - London Kids Preschool Avalurpet"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-amber-400 text-slate-900 font-black text-[10px] uppercase tracking-wider shadow-md whitespace-nowrap">
+                  Principal &amp; Head
+                </span>
+              </div>
+              <div className="mt-3">
+                <h4 className="font-black text-lg text-white">Dr. R. Arumugam</h4>
+                <p className="text-amber-300 font-bold text-xs">Ph.D., M.Ed.</p>
+                <p className="text-[11px] text-blue-200/80">Principal, London Kids Avalurpet</p>
+              </div>
+            </div>
+
+            {/* Principal Welcome & Message */}
+            <div className="space-y-4 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold uppercase tracking-wider">
+                <span>🎓 Institutional Leadership</span>
+                <span>•</span>
+                <span className="text-amber-300">Desk of the Principal</span>
+              </div>
+
+              <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                &ldquo;Every child is born with boundless genius — our role is to kindle it with warmth, play, and safety.&rdquo;
+              </h3>
+
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+                As Principal of London Kids Preschool Avalurpet, I welcome your family to our vibrant learning community. We unite a proven UK-concept play curriculum with attentive 1:8 educator ratios, hygienic CCTV-monitored facilities, and transparent digital portals for every parent.
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
+                <Link
+                  href="/about#principal-desk"
+                  className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs transition-all shadow-md hover:scale-105 active:scale-95"
+                >
+                  Read Principal&apos;s Full Address →
+                </Link>
+                <button
+                  onClick={() => handleOpenAdmission('PLAY_SCHOOL')}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all hover:scale-105 active:scale-95"
+                >
+                  Schedule Principal Interaction
+                </button>
+                <Link
+                  href="/login"
+                  className="px-4 py-2.5 rounded-xl bg-blue-600/80 hover:bg-blue-600 text-white font-bold text-xs transition-colors"
+                >
+                  Principal Portal 🔐
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Programs Section (4 Levels) */}
       <section id="programs" className="py-20 bg-amber-50/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

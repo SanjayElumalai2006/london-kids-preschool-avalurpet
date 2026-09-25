@@ -90,9 +90,15 @@ export default function Footer() {
                   🔐 Parent Portal Login
                 </Link>
               </li>
+              <li>
+                <Link href="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors flex items-center gap-1.5">
+                  🎓 Principal Portal
+                </Link>
+              </li>
+              <li><Link href="/about#principal-desk" className="hover:text-white transition-colors">📜 Desk of the Principal</Link></li>
               <li><Link href="/login" className="hover:text-white transition-colors">👩‍🏫 Teacher Portal</Link></li>
-              <li><Link href="/login" className="hover:text-white transition-colors">⚙️ Admin &amp; Owner Dashboard</Link></li>
-              <li><Link href="/#gallery" className="hover:text-white transition-colors">📸 Campus Photo Gallery</Link></li>
+              <li><Link href="/login" className="hover:text-white transition-colors">⚙️ Director &amp; Admin Dashboard</Link></li>
+              <li><Link href="/gallery" className="hover:text-white transition-colors">📸 Campus Photo Gallery</Link></li>
               <li><Link href="/#about" className="hover:text-white transition-colors">🛡️ Safety &amp; Hygiene Protocols</Link></li>
               <li><Link href="/#contact" className="hover:text-white transition-colors">📋 Admission Enquiry</Link></li>
             </ul>
@@ -101,8 +107,13 @@ export default function Footer() {
           {/* ── Contact ──────────────────────────────────────── */}
           <div className="space-y-3">
             <h3 className="font-bold mb-4 uppercase text-xs text-red-400 tracking-wider">
-              Campus &amp; Contact
+              Campus &amp; Leadership
             </h3>
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-0.5 text-xs">
+              <span className="text-[10px] uppercase font-bold text-amber-400 block">Principal&apos;s Office</span>
+              <p className="font-extrabold text-white">Dr. R. Arumugam, Principal</p>
+              <p className="text-[11px] text-slate-400">Head of Institution • Avalurpet</p>
+            </div>
             <div className="flex items-start gap-3 text-sm text-slate-400">
               <MapPin size={18} className="text-red-400 shrink-0 mt-0.5" />
               <span>{SCHOOL_ADDRESS}, {SCHOOL_CITY}</span>

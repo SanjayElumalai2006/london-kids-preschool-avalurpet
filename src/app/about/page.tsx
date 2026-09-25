@@ -64,28 +64,34 @@ const MILESTONES = [
 
 const TEAM = [
   {
+    name: 'Dr. R. Arumugam',
+    role: 'Principal & Head of Institution',
+    img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&auto=format&fit=crop&q=80',
+    note: 'Ph.D., M.Ed., Early Childhood Education — Leading academic excellence, holistic child development, and institutional governance.',
+  },
+  {
     name: 'Mrs. Lakshmi Priya',
-    role: 'Founder & Director',
+    role: 'Founder & Managing Director',
     img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
-    note: 'M.Ed., Child Psychology — 20 years in early childhood education.',
+    note: 'M.Ed., Child Psychology — 20 years pioneering experiential UK-concept preschool education.',
   },
   {
-    name: 'Mr. Rajesh Kumar',
-    role: 'School Administrator',
+    name: 'Mr. Saravanan K',
+    role: 'Campus Administrator',
     img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&auto=format&fit=crop&q=80',
-    note: 'MBA, School Management — oversees admissions and daily operations.',
+    note: 'MBA, Educational Operations — Directs admissions, campus facilities, and safety infrastructure.',
   },
   {
-    name: 'Ms. Meena Devi',
-    role: 'Head Teacher – LKG',
+    name: 'Mrs. Kavitha Raman',
+    role: 'Senior Faculty – Play School & Nursery',
+    img: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=300&auto=format&fit=crop&q=80',
+    note: 'B.Ed., Montessori Certified — Specialist in tactile sensory play and early socialization.',
+  },
+  {
+    name: 'Ms. Priya Sundaram',
+    role: 'Senior Faculty – LKG & UKG',
     img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&auto=format&fit=crop&q=80',
-    note: 'B.Ed., Montessori certified — 10 years shaping early learners.',
-  },
-  {
-    name: 'Mrs. Anita Das',
-    role: 'Head Teacher – Nursery',
-    img: 'https://images.unsplash.com/photo-1548142813-c348350df52b?w=300&auto=format&fit=crop&q=80',
-    note: 'D.T.Ed., Sensory Play specialist — warm mentor for tiny tots.',
+    note: 'D.T.Ed., Phonics & Early Numeracy — Expert in primary school readiness and reading fluency.',
   },
 ];
 
@@ -159,6 +165,113 @@ export default function AboutPage() {
                 alt="Children learning happily at London Kids Preschool"
                 className="w-full h-full object-cover"
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Desk of the Principal Section ─────────────────────── */}
+      <section id="principal-desk" className="py-20 bg-gradient-to-br from-blue-900 via-slate-900 to-indigo-950 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -z-0" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-0" />
+
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            {/* Principal Portrait & Designation Badges */}
+            <div className="lg:col-span-4 flex flex-col items-center text-center space-y-4">
+              <div className="relative">
+                <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-3xl overflow-hidden border-4 border-amber-400 shadow-2xl bg-slate-800">
+                  <img
+                    src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&auto=format&fit=crop&q=80"
+                    alt="Dr. R. Arumugam - Principal, London Kids Preschool Avalurpet"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-amber-400 text-slate-900 font-black text-xs uppercase tracking-wider shadow-lg whitespace-nowrap">
+                  Principal &amp; Head
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <h3 className="text-2xl font-black text-white">Dr. R. Arumugam</h3>
+                <p className="text-amber-300 font-bold text-sm">Ph.D., M.Ed. (Early Childhood Education)</p>
+                <p className="text-xs text-blue-200/80 mt-1">Institutional Head &amp; Principal • London Kids Avalurpet</p>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-blue-200 text-[11px] font-semibold">
+                  22+ Years in Pedagogy
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 text-emerald-300 text-[11px] font-semibold">
+                  Montessori &amp; EYFS Certified
+                </span>
+              </div>
+            </div>
+
+            {/* Letter from the Desk of the Principal */}
+            <div className="lg:col-span-8 bg-white/5 backdrop-blur-md rounded-3xl p-6 sm:p-10 border border-white/10 space-y-6 shadow-xl">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-black text-[10px] uppercase tracking-wider border border-amber-400/30">
+                    Institutional Leadership
+                  </span>
+                  <span className="text-xs text-blue-200/80">Academic Year 2026-27</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  From the Desk of the Principal
+                </h2>
+              </div>
+
+              <blockquote className="space-y-4 text-blue-100/90 text-sm sm:text-base leading-relaxed font-normal">
+                <p>
+                  &ldquo;A warm and heartfelt welcome to <strong>London Kids Preschool Avalurpet</strong>. In early childhood education, our mission is not merely to prepare children for elementary school, but to ignite their lifelong wonder, empathy, and creative curiosity.&rdquo;
+                </p>
+                <p>
+                  &ldquo;At our Avalurpet campus, we blend the globally respected <strong>UK Early Childhood Framework</strong> with rooted Indian values, attentive 1:8 educator ratios, and complete campus safety. Every child is treated as an individual of limitless promise.&rdquo;
+                </p>
+                <p>
+                  &ldquo;As Principal, my office maintains an open-door policy for all parents. Together, as partners in education, we will ensure your little one blossoms into a confident, joyful, and articulate young learner.&rdquo;
+                </p>
+              </blockquote>
+
+              {/* Key Pillars */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-amber-400 font-black text-xs block">🎯 Academic Rigor</span>
+                  <p className="text-[11px] text-blue-200/70">Phonics, language fluency &amp; sensorial development</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-emerald-400 font-black text-xs block">🛡️ Absolute Safety</span>
+                  <p className="text-[11px] text-blue-200/70">100% CCTV monitored with trained pediatric first-aid</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <span className="text-sky-400 font-black text-xs block">🤝 Parent Portal</span>
+                  <p className="text-[11px] text-blue-200/70">Daily live activity, attendance &amp; fee transparency</p>
+                </div>
+              </div>
+
+              {/* Actions & Official Desk Contact */}
+              <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs text-blue-200/80 space-y-0.5 text-center sm:text-left">
+                  <p><strong>Principal&apos;s Direct Office:</strong> +91 94432 18899 • +91 90436 33545</p>
+                  <p><strong>Official Email:</strong> principal.londonkids@gmail.com</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/#contact"
+                    className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-black text-xs transition-colors shadow-md"
+                  >
+                    Schedule Meeting
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-colors"
+                  >
+                    Principal Portal 🔐
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
