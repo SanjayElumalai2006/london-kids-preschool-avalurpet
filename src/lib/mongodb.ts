@@ -31,8 +31,9 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     return cached.conn;
   }
 
-  // In production (Vercel), MONGODB_URI MUST be set to cloud Atlas cluster
-  const uri = MONGODB_URI || (process.env.NODE_ENV === 'production' 
+  // In Vercel serverless environment, MONGODB_URI MUST be set to cloud Atlas cluster.
+  // In local environments (development or production build), fall back to local MongoDB.
+  const uri = process.env.MONGODB_URI || (process.env.VERCEL 
     ? '' 
     : 'mongodb://127.0.0.1:27017/londonkids_preschool');
 
