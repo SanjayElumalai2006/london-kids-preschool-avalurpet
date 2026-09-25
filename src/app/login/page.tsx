@@ -380,20 +380,20 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-baseline mb-1.5">
                 <label htmlFor="login-email" className="block text-sm font-semibold text-gray-900">
-                  Personal Email Address
+                  Login ID
                 </label>
                 <span className="text-xs font-medium text-gray-500">
-                  Registered Email
+                  Email / Mobile / Employee ID
                 </span>
               </div>
               <input
                 id="login-email"
-                type="email"
+                type="text"
                 required
-                autoComplete="off"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. londonkids276@gmail.com"
+                placeholder="Enter Registered Email, Mobile, or Employee ID"
                 className="w-full px-4 py-3 rounded-xl bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base font-medium transition-all focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 shadow-xs"
               />
             </div>
@@ -455,81 +455,8 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Quick Demo Access Bar */}
-          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block text-center">
-              Quick One-Click Demo Logins
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px] font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('principal.londonkids@gmail.com');
-                  setPassword('principal123');
-                }}
-                className="px-2 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-left transition-colors cursor-pointer"
-                title="Principal Login"
-              >
-                🎓 Principal
-                <span className="block text-[9px] text-blue-600 font-normal truncate">principal.londonkids...</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('londonkids276@gmail.com');
-                  setPassword('90436 33545');
-                }}
-                className="px-2 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-left transition-colors cursor-pointer"
-                title="Director / Owner Login"
-              >
-                👑 Director / Owner
-                <span className="block text-[9px] text-purple-600 font-normal truncate">londonkids276...</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin.londonkids@gmail.com');
-                  setPassword('admin123');
-                }}
-                className="px-2 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-left transition-colors cursor-pointer"
-                title="Campus Admin Login"
-              >
-                ⚙️ Campus Admin
-                <span className="block text-[9px] text-amber-600 font-normal truncate">admin.londonkids...</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('kavitha.lk@gmail.com');
-                  setPassword('teacher123');
-                }}
-                className="px-2 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-left transition-colors cursor-pointer"
-                title="Teacher Login"
-              >
-                👩‍🏫 Teacher (Play)
-                <span className="block text-[9px] text-sky-600 font-normal truncate">kavitha.lk...</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('rajesh.kumar@gmail.com');
-                  setPassword('parent123');
-                }}
-                className="px-2 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-left transition-colors cursor-pointer"
-                title="Parent Login"
-              >
-                👨‍👩‍👧 Parent (Aarav)
-                <span className="block text-[9px] text-emerald-600 font-normal truncate">rajesh.kumar...</span>
-              </button>
-            </div>
-          </div>
-
           {/* Privacy Note */}
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">
             <ShieldCheck size={14} className="text-emerald-600" />
             <span>Role-based access isolation &amp; encrypted credentials</span>
           </div>
