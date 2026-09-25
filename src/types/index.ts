@@ -103,9 +103,24 @@ export interface TeacherReview {
   recommendations?: string;
 }
 
+export type GalleryCategory = 'ALL' | 'EVENTS' | 'CLASSROOM' | 'PLAY' | 'ARTS' | 'CAMPUS';
+
+export interface EventPhoto {
+  id: string;
+  title: string;
+  caption: string;
+  date: string;
+  category: 'EVENTS' | 'CLASSROOM' | 'PLAY' | 'ARTS' | 'CAMPUS';
+  imageUrl: string;
+  uploadedBy: string;
+  showOnPublicWebsite: boolean;
+  targetLevel?: SchoolLevel | 'ALL';
+  createdAt?: string;
+}
+
 export interface ActivityPost {
   id: string;
-  level: SchoolLevel;
+  level: SchoolLevel | 'ALL';
   title: string;
   description: string;
   date: string;

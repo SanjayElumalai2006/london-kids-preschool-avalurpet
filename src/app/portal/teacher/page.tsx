@@ -6,7 +6,8 @@ import {
   Camera, Star, BookOpen, Send, Plus, Sparkles 
 } from '@/components/Icons';
 import { getStore, saveStore } from '@/lib/store';
-import { Student, AttendanceStatus, ActivityPost, TeacherReview, StudentResult, Notice } from '@/types';
+import { Student, AttendanceStatus, ActivityPost, TeacherReview, StudentResult, Notice, EventPhoto } from '@/types';
+import { processImageFile } from '@/lib/imageUpload';
 import PhotoUploadDropzone from '@/components/PhotoUploadDropzone';
 
 export default function TeacherPortalPage() {
@@ -26,6 +27,9 @@ export default function TeacherPortalPage() {
     imageUrl: 'https://images.unsplash.com/photo-1596464716127-f2a829822301?w=600&auto=format&fit=crop&q=80'
   });
   const [activitySaved, setActivitySaved] = useState(false);
+  const [showOnPublicWebsite, setShowOnPublicWebsite] = useState(true);
+  const [isOptimizingPhoto, setIsOptimizingPhoto] = useState(false);
+  const activityFileInputRef = React.useRef<HTMLInputElement>(null);
 
   // New Review form state
   const [reviewStudentId, setReviewStudentId] = useState('');
@@ -111,19 +115,48 @@ export default function TeacherPortalPage() {
   const handlePostActivity = (e: React.FormEvent) => {
     e.preventDefault();
     const store = getStore();
+    const today = new Date().toISOString().split('T')[0];
+
     const newAct: ActivityPost = {
       id: `act-${Date.now()}`,
       level: 'LKG',
       title: newActivity.title,
       description: newActivity.description,
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       imageUrl: newActivity.imageUrl,
       category: newActivity.category,
-      createdBy: 'Ms. Meena Devi'
+      createdBy: 'Ms. Meena Devi (Class Teacher)'
     };
 
+    let updatedGallery = store.gallery || [];
+    if (showOnPublicWebsite) {
+      const catMap: Record<ActivityPost['category'], EventPhoto['category']> = {
+        'Arts & Crafts': 'ARTS',
+        'Sensory & Play': 'PLAY',
+        'Music & Dance': 'EVENTS',
+        'Story & Phonics': 'CLASSROOM',
+        'Outdoor Fun': 'PLAY',
+        'Celebration': 'EVENTS',
+      };
+
+      const newPhoto: EventPhoto = {
+        id: `gal-${Date.now()}`,
+        title: newActivity.title,
+        caption: newActivity.description,
+        date: today,
+        category: catMap[newActivity.category] || 'CLASSROOM',
+        imageUrl: newActivity.imageUrl,
+        uploadedBy: 'Ms. Meena Devi',
+        showOnPublicWebsite: true,
+        targetLevel: 'LKG',
+        createdAt: new Date().toISOString(),
+      };
+      updatedGallery = [newPhoto, ...updatedGallery];
+    }
+
     saveStore({
-      activities: [newAct, ...store.activities]
+      activities: [newAct, ...store.activities],
+      gallery: updatedGallery,
     });
 
     setActivitySaved(true);
@@ -133,7 +166,7 @@ export default function TeacherPortalPage() {
       category: 'Sensory & Play',
       imageUrl: 'https://images.unsplash.com/photo-1596464716127-f2a829822301?w=600&auto=format&fit=crop&q=80'
     });
-    setTimeout(() => setActivitySaved(false), 3000);
+    setTimeout(() => setActivitySaved(false), 3500);
   };
 
   const handleSaveReview = (e: React.FormEvent) => {
@@ -401,11 +434,11 @@ export default function TeacherPortalPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Photo URL *
+                  Or Paste Photo Web URL
                 </label>
                 <input
                   type="url"
-                  required
+                  placeholder="https://..."
                   value={newActivity.imageUrl}
                   onChange={(e) => setNewActivity({ ...newActivity, imageUrl: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -413,9 +446,67 @@ export default function TeacherPortalPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">
+                Activity Photo (Device Upload or Camera) *
+              </label>
+
+              {/* Photo Preview & Dropzone */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center p-4 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/40">
+                <div className="w-36 h-28 rounded-xl overflow-hidden bg-white border border-slate-200 shrink-0 shadow-xs relative">
+                  <img
+                    src={newActivity.imageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  {isOptimizingPhoto && (
+                    <div className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white text-xs font-bold">
+                      Processing...
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2 text-center sm:text-left">
+                  <button
+                    type="button"
+                    onClick={() => activityFileInputRef.current?.click()}
+                    disabled={isOptimizingPhoto}
+                    className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs shadow-xs transition-colors cursor-pointer"
+                  >
+                    {isOptimizingPhoto ? 'Compressing...' : 'Upload Photo from Device / Camera'}
+                  </button>
+
+                  <input
+                    ref={activityFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsOptimizingPhoto(true);
+                      try {
+                        const opt = await processImageFile(file, 1200, 0.82);
+                        setNewActivity(prev => ({ ...prev, imageUrl: opt }));
+                      } catch (err) {
+                        alert('Failed to process image');
+                      } finally {
+                        setIsOptimizingPhoto(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+
+                  <p className="text-[11px] text-slate-500">
+                    Snap a photo with your mobile or upload JPG/PNG. Auto-compressed for instant loading!
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Description & Learning Highlights *
+                Description &amp; Learning Highlights *
               </label>
               <textarea
                 rows={3}
@@ -427,12 +518,25 @@ export default function TeacherPortalPage() {
               />
             </div>
 
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+              <label className="flex items-center gap-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showOnPublicWebsite}
+                  onChange={(e) => setShowOnPublicWebsite(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-sky-500"
+                />
+                <span>Also feature this photo on the Public Website Gallery (<code>/gallery</code>)</span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md shadow-sky-200 transition-all flex items-center gap-2"
+              disabled={isOptimizingPhoto}
+              className="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md shadow-sky-200 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Camera size={18} />
-              <span>Post to Parents&apos; Feed</span>
+              <span>Post to Parents&apos; Feed &amp; Gallery</span>
             </button>
           </form>
         </div>

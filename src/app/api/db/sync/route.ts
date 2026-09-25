@@ -12,6 +12,7 @@ import {
   AdmissionEnquiryModel,
   SchoolSettingsModel,
   AuditLogModel,
+  EventPhotoModel,
 } from '@/models';
 import {
   INITIAL_SETTINGS,
@@ -24,6 +25,7 @@ import {
   DEMO_INVOICES,
   DEMO_NOTICES,
   DEMO_ENQUIRIES,
+  INITIAL_GALLERY_PHOTOS,
 } from '@/lib/initialData';
 
 // Helper to strip internal Mongoose keys from output
@@ -100,6 +102,7 @@ export async function GET() {
       FeeInvoiceModel.find({}).lean(),
       NoticeModel.find({}).lean(),
       AdmissionEnquiryModel.find({}).lean(),
+      EventPhotoModel.find({}).lean(),
     ]);
 
     const auditLogsDocs = await AuditLogModel.find({}).lean();
@@ -145,6 +148,14 @@ export async function GET() {
       enquiriesDocs = await AdmissionEnquiryModel.find({}).lean();
     }
 
+    let galleryDocs = arguments ? (arguments as any) : null;
+    // Auto-seed gallery if empty
+    let currentGalleryDocs = await EventPhotoModel.find({}).lean();
+    if (currentGalleryDocs.length === 0 && INITIAL_GALLERY_PHOTOS.length > 0) {
+      await EventPhotoModel.insertMany(INITIAL_GALLERY_PHOTOS);
+      currentGalleryDocs = await EventPhotoModel.find({}).lean();
+    }
+
 
 
     return NextResponse.json({
@@ -161,6 +172,7 @@ export async function GET() {
         notices: cleanDocs(noticesDocs),
         enquiries: cleanDocs(enquiriesDocs),
         auditLogs: cleanDocs(auditLogsDocs),
+        gallery: cleanDocs(currentGalleryDocs),
       },
       fetchedAt: new Date().toISOString(),
     });
@@ -206,6 +218,7 @@ export async function POST(request: Request) {
     if (body.notices) tasks.push(upsertMany(NoticeModel, body.notices));
     if (body.enquiries) tasks.push(upsertMany(AdmissionEnquiryModel, body.enquiries));
     if (body.auditLogs) tasks.push(upsertMany(AuditLogModel, body.auditLogs));
+    if (body.gallery) tasks.push(upsertMany(EventPhotoModel, body.gallery));
 
     await Promise.all(tasks);
 

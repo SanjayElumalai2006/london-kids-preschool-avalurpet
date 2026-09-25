@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { 
   Users, DollarSign, Calendar, FileText, 
   Search, Plus, CheckCircle2, AlertTriangle, 
-  Sparkles, Mail, Phone, Download, Send, UserPlus, Camera
+  Sparkles, Mail, Phone, Download, Send, UserPlus, Camera, Trash2
 } from '@/components/Icons';
 import { getStore, saveStore } from '@/lib/store';
-import { Student, SchoolLevel, AdmissionEnquiry, FeeInvoice, Notice } from '@/types';
+import { Student, SchoolLevel, AdmissionEnquiry, FeeInvoice, Notice, EventPhoto, GalleryCategory } from '@/types';
 import PhotoUploadDropzone from '@/components/PhotoUploadDropzone';
+import EventPhotoUploadModal from '@/components/EventPhotoUploadModal';
 
 export default function AdminPortalPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -17,7 +18,11 @@ export default function AdminPortalPage() {
   const [invoices, setInvoices] = useState<FeeInvoice[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'STUDENTS' | 'ENQUIRIES' | 'FEES' | 'NOTICES'>('STUDENTS');
+  const [activeTab, setActiveTab] = useState<'STUDENTS' | 'ENQUIRIES' | 'FEES' | 'NOTICES' | 'GALLERY'>('STUDENTS');
+  const [galleryPhotos, setGalleryPhotos] = useState<EventPhoto[]>([]);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [galleryCatFilter, setGalleryCatFilter] = useState<GalleryCategory>('ALL');
+  const [lightboxPhoto, setLightboxPhoto] = useState<EventPhoto | null>(null);
   const [levelFilter, setLevelFilter] = useState<SchoolLevel | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,6 +57,7 @@ export default function AdminPortalPage() {
     setEnquiries(store.enquiries);
     setInvoices(store.invoices);
     setNotices(store.notices);
+    setGalleryPhotos(store.gallery || []);
   };
 
   useEffect(() => {
@@ -224,6 +230,16 @@ export default function AdminPortalPage() {
     setTimeout(() => setNoticeSuccess(false), 3000);
   };
 
+  const handleRemovePhoto = (photoId: string) => {
+    if (!confirm('Are you sure you want to remove this photo from the school gallery?')) return;
+    const store = getStore();
+    const updated = (store.gallery || []).filter(p => p.id !== photoId);
+    saveStore({ gallery: updated });
+    setGalleryPhotos(updated);
+    setReminderToast('Event photo removed from gallery successfully.');
+    setTimeout(() => setReminderToast(''), 3500);
+  };
+
   const totalDues = invoices.reduce((acc, curr) => acc + curr.dueAmount, 0);
 
   return (
@@ -314,7 +330,8 @@ export default function AdminPortalPage() {
           { id: 'STUDENTS', label: 'Student Admissions & Rosters', icon: '🎒' },
           { id: 'ENQUIRIES', label: 'Website Enquiries Inbox', icon: '📬' },
           { id: 'FEES', label: 'Fee Dues & Collections', icon: '💳' },
-          { id: 'NOTICES', label: 'Broadcast Circulars', icon: '📢' }
+          { id: 'NOTICES', label: 'Broadcast Circulars', icon: '📢' },
+          { id: 'GALLERY', label: 'School Events & Gallery', icon: '📸' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -701,6 +718,191 @@ export default function AdminPortalPage() {
           </form>
         </div>
       )}
+
+      {/* Tab 5: Events & Gallery */}
+      {activeTab === 'GALLERY' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 font-extrabold text-[10px] uppercase">
+                  Website Gallery CMS
+                </span>
+                <span className="text-xs text-slate-500 font-bold">{galleryPhotos.length} Total Photos</span>
+              </div>
+              <h2 className="text-xl font-black text-slate-900 mt-1">School Events &amp; Public Gallery</h2>
+              <p className="text-xs text-slate-500">
+                Post celebration photos, sports day moments, and campus activities directly to the website gallery and parent feeds.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/gallery"
+                target="_blank"
+                className="px-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5"
+              >
+                <span>View Public Gallery</span>
+                <span>↗</span>
+              </Link>
+              <button
+                onClick={() => setEventModalOpen(true)}
+                className="px-5 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md shadow-red-200 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Camera size={16} />
+                <span>+ Post Event Photo</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+            {[
+              { id: 'ALL' as const, label: 'All Photos' },
+              { id: 'EVENTS' as const, label: '🎉 School Events' },
+              { id: 'CLASSROOM' as const, label: '📚 Classroom' },
+              { id: 'PLAY' as const, label: '🎠 Play & Sports' },
+              { id: 'ARTS' as const, label: '🎨 Arts & Crafts' },
+              { id: 'CAMPUS' as const, label: '🏫 Campus' },
+            ].map((cat) => {
+              const count = cat.id === 'ALL' ? galleryPhotos.length : galleryPhotos.filter(p => p.category === cat.id).length;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setGalleryCatFilter(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    galleryCatFilter === cat.id
+                      ? 'bg-red-600 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{cat.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    galleryCatFilter === cat.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Photos Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {(galleryCatFilter === 'ALL' ? galleryPhotos : galleryPhotos.filter(p => p.category === galleryCatFilter)).map((item) => (
+              <div
+                key={item.id}
+                className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
+              >
+                <div>
+                  <div 
+                    className="relative aspect-4/3 bg-slate-100 overflow-hidden cursor-pointer group"
+                    onClick={() => setLightboxPhoto(item)}
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 left-3 flex gap-1.5">
+                      <span className="bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-full">
+                        {item.category}
+                      </span>
+                    </div>
+
+                    <div className="absolute top-3 right-3">
+                      <span className="bg-emerald-600/90 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-xs">
+                        Public Web
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold">
+                      <span>{item.date}</span>
+                      <span>By {item.uploadedBy || 'Admin'}</span>
+                    </div>
+                    <h3 className="font-extrabold text-sm text-slate-800 line-clamp-1">{item.title}</h3>
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{item.caption}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0 border-t border-slate-100 mt-2 flex justify-between items-center text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxPhoto(item)}
+                    className="text-red-600 hover:text-red-700 font-bold text-[11px] cursor-pointer"
+                  >
+                    View Fullscreen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(item.id)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                    title="Delete photo"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {galleryPhotos.length === 0 && (
+            <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 p-8 space-y-3">
+              <Camera size={40} className="mx-auto text-slate-300" />
+              <p className="text-sm font-bold text-slate-700">No event photos posted yet</p>
+              <p className="text-xs text-slate-500">Click below to upload photos from school events, sports day, or campus festivals.</p>
+              <button
+                onClick={() => setEventModalOpen(true)}
+                className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs"
+              >
+                + Post First Event Photo
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lightbox for Admin Gallery */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <div
+            className="relative max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <img src={lightboxPhoto.imageUrl} alt={lightboxPhoto.title} className="w-full max-h-[70vh] object-contain bg-slate-100" />
+            <div className="p-5 flex justify-between items-center">
+              <div>
+                <span className="text-[10px] font-black uppercase text-red-600">{lightboxPhoto.category} • {lightboxPhoto.date}</span>
+                <h3 className="font-black text-slate-800 text-lg">{lightboxPhoto.title}</h3>
+                <p className="text-xs text-slate-500 mt-1">{lightboxPhoto.caption}</p>
+              </div>
+              <button
+                onClick={() => setLightboxPhoto(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Photo Upload Modal */}
+      <EventPhotoUploadModal
+        isOpen={eventModalOpen}
+        onClose={() => setEventModalOpen(false)}
+        currentUserName="Administrator"
+        onSuccess={() => {
+          loadData();
+          setReminderToast('New event photo successfully published to the website!');
+          setTimeout(() => setReminderToast(''), 3500);
+        }}
+      />
 
       {/* Add Student Modal */}
       {addModalOpen && (

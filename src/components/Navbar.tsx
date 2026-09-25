@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { href: '/#about',        label: 'About' },
   { href: '/#programs',     label: 'Programs' },
   { href: '/#facilities',   label: 'Facilities' },
-  { href: '/#gallery',      label: 'Gallery' },
+  { href: '/gallery',       label: 'Gallery' },
   { href: '/#testimonials', label: 'Reviews' },
   { href: '/#contact',      label: 'Contact' },
 ];

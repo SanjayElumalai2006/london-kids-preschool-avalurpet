@@ -3,7 +3,7 @@ import { SchoolLevel } from '@/types';
 
 export interface IActivityPostDocument extends Document {
   id: string;
-  level: SchoolLevel;
+  level: SchoolLevel | 'ALL';
   title: string;
   description: string;
   date: string;
@@ -15,7 +15,7 @@ export interface IActivityPostDocument extends Document {
 const ActivityPostSchema = new Schema<IActivityPostDocument>(
   {
     id: { type: String, required: true, unique: true, index: true },
-    level: { type: String, enum: ['PLAY_SCHOOL', 'NURSERY', 'LKG', 'UKG'], required: true },
+    level: { type: String, enum: ['PLAY_SCHOOL', 'NURSERY', 'LKG', 'UKG', 'ALL'], required: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
     date: { type: String, required: true },

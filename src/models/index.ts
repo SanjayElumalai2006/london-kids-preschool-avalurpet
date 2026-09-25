@@ -9,3 +9,4 @@ export { default as FeeInvoiceModel, FeeInvoiceModel as FeeInvoice } from './Fee
 export { default as ActivityPostModel, ActivityPostModel as ActivityPost } from './ActivityPost';
 export { default as StudentResultModel, StudentResultModel as StudentResult } from './StudentResult';
 export { default as AuditLogModel, AuditLogModel as AuditLog } from './AuditLog';
+export { default as EventPhotoModel, EventPhotoModel as EventPhoto } from './EventPhoto';

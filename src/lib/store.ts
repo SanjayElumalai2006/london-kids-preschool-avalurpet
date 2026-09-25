@@ -4,7 +4,7 @@ import {
   User, Student, AttendanceRecord, TeacherReview, 
   ActivityPost, StudentResult, FeeInvoice, Notice, 
   AdmissionEnquiry, SchoolSettings, 
-  AuditLogEntry 
+  AuditLogEntry, EventPhoto 
 } from '@/types';
 import { hashPasswordSync } from '@/lib/security';
 import {
@@ -19,6 +19,7 @@ import {
   DEMO_NOTICES,
   DEMO_ENQUIRIES,
   INITIAL_AUDIT_LOGS,
+  INITIAL_GALLERY_PHOTOS,
 } from '@/lib/initialData';
 
 export {
@@ -33,6 +34,7 @@ export {
   DEMO_NOTICES,
   DEMO_ENQUIRIES,
   INITIAL_AUDIT_LOGS,
+  INITIAL_GALLERY_PHOTOS,
 };
 
 // Storage Helper Functions with LocalStorage Sync
@@ -50,6 +52,7 @@ export interface AppStoreData {
   notices: Notice[];
   enquiries: AdmissionEnquiry[];
   auditLogs: AuditLogEntry[];
+  gallery: EventPhoto[];
   currentUser: User | null;
 }
 
@@ -88,6 +91,7 @@ export async function syncWithDatabase(): Promise<void> {
         notices: dbData.notices || current.notices,
         enquiries: dbData.enquiries || current.enquiries,
         auditLogs: dbData.auditLogs || current.auditLogs,
+        gallery: dbData.gallery || current.gallery,
         currentUser: current.currentUser, // Keep local user session intact
       };
 
@@ -116,6 +120,7 @@ export function getStore(): AppStoreData {
       notices: DEMO_NOTICES,
       enquiries: DEMO_ENQUIRIES,
       auditLogs: INITIAL_AUDIT_LOGS,
+      gallery: INITIAL_GALLERY_PHOTOS,
       currentUser: null,
     };
   }
@@ -142,6 +147,7 @@ export function getStore(): AppStoreData {
         notices: DEMO_NOTICES,
         enquiries: DEMO_ENQUIRIES,
         auditLogs: INITIAL_AUDIT_LOGS,
+        gallery: INITIAL_GALLERY_PHOTOS,
         currentUser: null,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
@@ -280,6 +286,10 @@ export function getStore(): AppStoreData {
       parsed.enquiries = DEMO_ENQUIRIES;
     }
 
+    if (!parsed.gallery || !Array.isArray(parsed.gallery) || parsed.gallery.length === 0) {
+      parsed.gallery = INITIAL_GALLERY_PHOTOS;
+    }
+
     if (parsed.currentUser) {
       const cEmail = (parsed.currentUser.personalEmail || parsed.currentUser.email || '').toLowerCase();
       if (FAKE_USER_EMAILS.has(cEmail)) {
@@ -321,6 +331,7 @@ export function getStore(): AppStoreData {
       notices: DEMO_NOTICES,
       enquiries: DEMO_ENQUIRIES,
       auditLogs: INITIAL_AUDIT_LOGS,
+      gallery: INITIAL_GALLERY_PHOTOS,
       currentUser: null
     };
   }

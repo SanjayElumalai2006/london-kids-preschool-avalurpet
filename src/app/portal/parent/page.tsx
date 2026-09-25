@@ -57,8 +57,8 @@ export default function ParentPortalPage() {
     setAttendance(store.attendance.filter(a => a.studentId === activeChild.id));
     // Scoped reviews
     setReviews(store.reviews.filter(r => r.studentId === activeChild.id));
-    // Scoped activities (for student's class level)
-    setActivities(store.activities.filter(a => a.level === activeChild.level));
+    // Scoped activities (for student's class level or school-wide)
+    setActivities(store.activities.filter(a => a.level === 'ALL' || a.level === activeChild.level));
     // Scoped results
     setResults(store.results.filter(r => r.studentId === activeChild.id));
     // Scoped invoice
@@ -72,7 +72,7 @@ export default function ParentPortalPage() {
     setStudent(child);
     setAttendance(store.attendance.filter(a => a.studentId === child.id));
     setReviews(store.reviews.filter(r => r.studentId === child.id));
-    setActivities(store.activities.filter(a => a.level === child.level));
+    setActivities(store.activities.filter(a => a.level === 'ALL' || a.level === child.level));
     setResults(store.results.filter(r => r.studentId === child.id));
     setInvoice(store.invoices.find(i => i.studentId === child.id) || null);
     setNotices(store.notices.filter(n => n.targetLevel === 'ALL' || n.targetLevel === child.level));
