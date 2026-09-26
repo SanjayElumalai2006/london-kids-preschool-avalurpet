@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { GraduationCap, Menu, X, Phone, ShieldCheck } from '@/components/Icons';
+import { GraduationCap, Menu, X, Phone, ShieldCheck, Sparkles } from '@/components/Icons';
 import SchoolLogo from '@/components/SchoolLogo';
 import {
   SCHOOL_NAME,
@@ -42,6 +42,10 @@ export default function Navbar() {
             <span className="opacity-50">|</span>
             <span className="flex items-center gap-1.5 opacity-90">
               <ShieldCheck size={13} /> Safe &amp; CCTV Monitored
+            </span>
+            <span className="opacity-50 hidden lg:inline">|</span>
+            <span className="hidden lg:flex items-center gap-1 text-amber-300 font-extrabold text-[11px] tracking-wide">
+              <Sparkles size={11} className="text-yellow-300" /> 7hills web solution
             </span>
           </div>
         </div>
