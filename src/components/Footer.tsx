@@ -141,9 +141,18 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.</p>
+        {/* Copyright & Credits */}
+        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+            <p>© {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.</p>
+            <span className="hidden sm:inline text-slate-700">•</span>
+            <p className="flex items-center gap-1.5 text-slate-400">
+              <span>Crafted &amp; Developed by</span>
+              <span className="font-extrabold text-amber-400 hover:text-amber-300 tracking-wide transition-colors">
+                7hills web solution
+              </span>
+            </p>
+          </div>
           <div className="flex items-center gap-1">
             <span>Made with</span>
             <Heart size={14} className="text-rose-500 fill-rose-500 mx-0.5" />

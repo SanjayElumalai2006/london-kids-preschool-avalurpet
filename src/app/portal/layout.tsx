@@ -302,6 +302,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <LogOut size={15} />
             <span>Sign Out / Logout</span>
           </button>
+
+          {/* Tech Partner credit */}
+          <div className="pt-1 text-center">
+            <p className="text-[10px] text-slate-400 font-medium">
+              Platform by <span className="font-bold text-slate-600">7hills web solution</span>
+            </p>
+          </div>
         </div>
       </aside>
 
