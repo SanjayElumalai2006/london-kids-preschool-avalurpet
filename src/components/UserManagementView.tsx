@@ -223,7 +223,7 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
       return;
     }
 
-    if (['OWNER', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role)) {
+    if (['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role)) {
       const empIdError = validateUniqueEmployeeId(enrollForm.employeeId);
       if (empIdError) {
         showFeedback('error', empIdError);
@@ -260,7 +260,7 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
       phone: enrollForm.phone.trim(),
       address: enrollForm.address.trim(),
       dateOfJoining: enrollForm.dateOfJoining,
-      employeeId: ['OWNER', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role) ? enrollForm.employeeId.trim() : undefined,
+      employeeId: ['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF'].includes(enrollForm.role) ? enrollForm.employeeId.trim() : undefined,
       assignedClass: ['TEACHER', 'STAFF', 'STUDENT'].includes(enrollForm.role) ? enrollForm.assignedClass : undefined,
       assignedSection: ['TEACHER', 'STAFF', 'STUDENT'].includes(enrollForm.role) ? enrollForm.assignedSection : undefined,
       studentId: enrollForm.role === 'PARENT' ? selectedStudentIds[0] : (enrollForm.role === 'STUDENT' ? (students[0]?.id || '') : undefined),

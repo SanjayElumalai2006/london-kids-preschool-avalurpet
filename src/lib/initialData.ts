@@ -124,6 +124,26 @@ export const DEMO_USERS: User[] = [
     emailVerified: true,
     mustChangePassword: false
   },
+  // Campus Staff (Support & Transport)
+  {
+    id: 'user-staff-selvam',
+    name: 'Mr. Selvam M (Campus Staff)',
+    email: 'staff.londonkids@gmail.com',
+    personalEmail: 'staff.londonkids@gmail.com',
+    role: 'STAFF',
+    phone: '+91 98405 67890',
+    employeeId: 'EMP-LK-STF01',
+    address: 'South Street, Avalurpet, Tamil Nadu – 606 702',
+    dateOfJoining: '2024-03-01',
+    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+    status: 'ACTIVE',
+    createdAt: '2026-09-19',
+    updatedAt: '2026-09-19',
+    passwordHash: hashPasswordSync('staff123'),
+    emailVerified: true,
+    mustChangePassword: false
+  },
   // Parent 1
   {
     id: 'user-parent-rajesh',

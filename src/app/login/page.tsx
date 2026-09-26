@@ -53,7 +53,9 @@ export default function LoginPage() {
   const redirectByRole = (role: UserRole) => {
     if (role === 'PARENT' || role === 'STUDENT') {
       router.push('/portal/parent');
-    } else if (role === 'TEACHER' || role === 'STAFF') {
+    } else if (role === 'STAFF') {
+      router.push('/portal/staff');
+    } else if (role === 'TEACHER') {
       router.push('/portal/teacher');
     } else if (role === 'ADMIN') {
       router.push('/portal/admin');
@@ -62,6 +64,28 @@ export default function LoginPage() {
     } else if (role === 'OWNER') {
       router.push('/portal/owner');
     }
+  };
+
+  const handleQuickDemoLogin = (emailVal: string, pwdVal: string) => {
+    setEmail(emailVal);
+    setPassword(pwdVal);
+    setError('');
+    setLoading(true);
+    setTimeout(() => {
+      const store = getStore();
+      const input = emailVal.toLowerCase();
+      const matchedUser = store.users.find(u => 
+        (u.personalEmail && u.personalEmail.toLowerCase() === input) ||
+        (u.email && u.email.toLowerCase() === input)
+      );
+      if (matchedUser) {
+        saveStore({ currentUser: matchedUser });
+        redirectByRole(matchedUser.role);
+      } else {
+        setLoading(false);
+        setError('Demo account not found in current local store.');
+      }
+    }, 300);
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -455,8 +479,70 @@ export default function LoginPage() {
             </div>
           </form>
 
+          {/* Quick Role Demo Buttons */}
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-400 text-center mb-2.5">
+              Instant 1-Click Role Login
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-left">
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('londonkids276@gmail.com', '90436 33545')}
+                className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-purple-700">👑 Owner / Dir</span>
+                <span className="block text-[9px] text-purple-600 font-mono truncate">90436 33545</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('principal.londonkids@gmail.com', 'principal123')}
+                className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-blue-700">🎓 Principal</span>
+                <span className="block text-[9px] text-blue-600 font-mono truncate">principal123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('admin.londonkids@gmail.com', 'admin123')}
+                className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-amber-700">⚙️ Admin</span>
+                <span className="block text-[9px] text-amber-600 font-mono truncate">admin123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('staff.londonkids@gmail.com', 'staff123')}
+                className="p-2 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-teal-700">🚌 Staff</span>
+                <span className="block text-[9px] text-teal-600 font-mono truncate">staff123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('kavitha.lk@gmail.com', 'teacher123')}
+                className="p-2 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-sky-700">🧸 Teacher</span>
+                <span className="block text-[9px] text-sky-600 font-mono truncate">teacher123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('rajesh.kumar@gmail.com', 'parent123')}
+                className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 transition-all cursor-pointer group text-left"
+              >
+                <span className="block text-[11px] font-black group-hover:text-emerald-700">👨‍👩‍👧 Parent</span>
+                <span className="block text-[9px] text-emerald-600 font-mono truncate">parent123</span>
+              </button>
+            </div>
+          </div>
+
           {/* Privacy Note */}
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-medium">
             <ShieldCheck size={14} className="text-emerald-600" />
             <span>Role-based access isolation &amp; encrypted credentials</span>
           </div>

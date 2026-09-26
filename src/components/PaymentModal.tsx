@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, CheckCircle2, CreditCard, DollarSign, Download, Sparkles } from '@/components/Icons';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle2, CreditCard, IndianRupee, Download, Sparkles } from '@/components/Icons';
 import { FeeInvoice, FeeReceipt } from '@/types';
 import { getStore, saveStore } from '@/lib/store';
 
@@ -14,10 +14,16 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose, invoice, studentName, onSuccess }: PaymentModalProps) {
-  const [payAmount, setPayAmount] = useState<number>(invoice.dueAmount || 1200);
+  const [payAmount, setPayAmount] = useState<number>(invoice.dueAmount || 15000);
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CARD' | 'NETBANKING'>('UPI');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedReceipt, setCompletedReceipt] = useState<FeeReceipt | null>(null);
+
+  useEffect(() => {
+    if (invoice?.dueAmount) {
+      setPayAmount(invoice.dueAmount);
+    }
+  }, [invoice?.dueAmount, invoice?.id]);
 
   if (!isOpen) return null;
 
@@ -91,7 +97,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
                 Payment Successful
               </span>
               <h3 className="text-2xl font-black text-slate-800 mt-2">
-                Fee Paid: ${completedReceipt.amount.toLocaleString()}
+                Fee Paid: ₹{completedReceipt.amount.toLocaleString()}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
                 Receipt Number: <strong>{completedReceipt.receiptNo}</strong>
@@ -122,7 +128,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
               </div>
               <div className="flex justify-between text-slate-800 font-bold border-t border-slate-200 pt-1.5 text-sm font-sans">
                 <span>Amount Paid:</span>
-                <span className="text-emerald-700 font-extrabold">${completedReceipt.amount.toLocaleString()}</span>
+                <span className="text-emerald-700 font-extrabold">₹{completedReceipt.amount.toLocaleString()}</span>
               </div>
             </div>
 
@@ -145,7 +151,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
         ) : (
           <div>
             <div className="flex items-center gap-1.5 text-emerald-600 font-bold text-xs uppercase tracking-wider mb-1">
-              <DollarSign size={16} /> Secure School Payment Gateway
+              <IndianRupee size={16} /> Secure School Payment Gateway
             </div>
             <h2 className="text-2xl font-black text-slate-800 tracking-tight">
               Pay Preschool Tuition Fee
@@ -162,7 +168,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
               </div>
               <div className="text-right">
                 <span className="text-[10px] uppercase font-bold text-emerald-700">Due Balance</span>
-                <p className="text-xl font-black text-emerald-800">${invoice.dueAmount.toLocaleString()}</p>
+                <p className="text-xl font-black text-emerald-800">₹{invoice.dueAmount.toLocaleString()}</p>
               </div>
             </div>
 
@@ -170,7 +176,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
               {/* Amount Selection */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-2">
-                  Payment Amount ($)
+                  Payment Amount (₹)
                 </label>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <button
@@ -182,23 +188,23 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    Full Balance (${invoice.dueAmount})
+                    Full Balance (₹{invoice.dueAmount.toLocaleString()})
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPayAmount(Math.min(invoice.dueAmount, 600))}
+                    onClick={() => setPayAmount(Math.min(invoice.dueAmount, Math.max(1000, Math.round(invoice.dueAmount / 2))))}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${
-                      payAmount === 600
+                      payAmount === Math.round(invoice.dueAmount / 2)
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    Partial Installment ($600)
+                    Installment (₹{Math.round(invoice.dueAmount / 2).toLocaleString()})
                   </button>
                 </div>
                 <input
                   type="number"
-                  min="50"
+                  min="100"
                   max={invoice.dueAmount}
                   value={payAmount}
                   onChange={(e) => setPayAmount(Number(e.target.value))}
@@ -245,7 +251,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <DollarSign size={16} className="text-emerald-500" />
+                    <IndianRupee size={16} className="text-emerald-500" />
                     <span>Net Banking</span>
                   </button>
                 </div>
@@ -254,11 +260,11 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
               {/* Dynamic Sub-form based on method */}
               {paymentMethod === 'UPI' && (
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2">
-                  <p className="text-xs text-slate-600 font-medium">Scan & Pay via Google Pay, PhonePe, or BHIM</p>
+                  <p className="text-xs text-slate-600 font-medium">Scan & Pay via Google Pay, PhonePe, Paytm, or BHIM UPI</p>
                   <div className="w-28 h-28 bg-white p-2 rounded-xl border border-slate-300 mx-auto flex items-center justify-center shadow-xs">
                     {/* Simplified simulated QR */}
                     <div className="w-full h-full bg-slate-900 rounded-sm flex items-center justify-center text-white font-mono text-[9px] p-1 text-center">
-                      LONDON-KIDS QR CODE
+                      LONDON-KIDS UPI QR
                     </div>
                   </div>
                   <p className="text-[11px] text-slate-500 font-mono">UPI ID: londonkids.avalurpet@icici</p>
@@ -269,7 +275,7 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
                 <div className="space-y-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <input
                     type="text"
-                    placeholder="Card Number (4111 2222 3333 4444)"
+                    placeholder="Card Number (RuPay, Visa, Mastercard)"
                     defaultValue="4242 •••• •••• 4242"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white"
                   />
@@ -293,11 +299,12 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
               {paymentMethod === 'NETBANKING' && (
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
                   <select className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white">
-                    <option>Chase Bank</option>
-                    <option>Bank of America</option>
-                    <option>Wells Fargo</option>
-                    <option>Citibank</option>
-                    <option>HDFC Bank / ICICI Bank</option>
+                    <option>State Bank of India (SBI)</option>
+                    <option>HDFC Bank</option>
+                    <option>ICICI Bank</option>
+                    <option>Axis Bank</option>
+                    <option>Indian Overseas Bank (IOB)</option>
+                    <option>Canara Bank</option>
                   </select>
                 </div>
               )}
@@ -311,10 +318,10 @@ export default function PaymentModal({ isOpen, onClose, invoice, studentName, on
                   {isProcessing ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
-                      Authorizing Payment of ${payAmount}...
+                      Authorizing Payment of ₹{payAmount.toLocaleString()}...
                     </span>
                   ) : (
-                    <span>Confirm & Pay ${payAmount.toLocaleString()}</span>
+                    <span>Confirm & Pay ₹{payAmount.toLocaleString()}</span>
                   )}
                 </button>
               </div>

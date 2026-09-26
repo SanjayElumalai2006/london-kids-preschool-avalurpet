@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  Users, DollarSign, Calendar, FileText, 
+  Users, IndianRupee, Calendar, FileText, 
   Search, Plus, CheckCircle2, AlertTriangle, 
   Sparkles, Mail, Phone, Download, Send, UserPlus, Camera, Trash2
 } from '@/components/Icons';
@@ -112,7 +112,8 @@ export default function AdminPortalPage() {
     };
 
     // Create corresponding fee invoice
-    const feeAmount = store.settings.fees[newStudent.level] || 3000;
+    const feeAmount = store.settings?.fees?.[newStudent.level] || 
+      (newStudent.level === 'PLAY_SCHOOL' ? 18000 : newStudent.level === 'NURSERY' ? 22000 : newStudent.level === 'LKG' ? 26000 : 30000);
     const newInvoice: FeeInvoice = {
       id: `inv-${Date.now()}`,
       studentId,
@@ -304,7 +305,7 @@ export default function AdminPortalPage() {
 
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">Outstanding Fee Dues</span>
-          <p className="text-2xl font-black text-rose-600">${totalDues.toLocaleString()}</p>
+          <p className="text-2xl font-black text-rose-600">₹{totalDues.toLocaleString()}</p>
           <p className="text-[11px] text-slate-500">
             {invoices.filter(i => i.dueAmount > 0).length} Unsettled Invoices
           </p>
@@ -593,9 +594,9 @@ export default function AdminPortalPage() {
                         {studentObj?.name || 'Student'}
                         <span className="block text-[10px] text-slate-400">{inv.invoiceNo}</span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-600">${inv.totalAnnualFee.toLocaleString()}</td>
-                      <td className="py-3.5 px-4 font-mono text-emerald-600 font-bold">${inv.paidAmount.toLocaleString()}</td>
-                      <td className="py-3.5 px-4 font-mono text-rose-600 font-bold">${inv.dueAmount.toLocaleString()}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-600">₹{inv.totalAnnualFee.toLocaleString()}</td>
+                      <td className="py-3.5 px-4 font-mono text-emerald-600 font-bold">₹{inv.paidAmount.toLocaleString()}</td>
+                      <td className="py-3.5 px-4 font-mono text-rose-600 font-bold">₹{inv.dueAmount.toLocaleString()}</td>
                       <td className="py-3.5 px-4 text-slate-500">{inv.dueDate}</td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
@@ -609,7 +610,7 @@ export default function AdminPortalPage() {
                       <td className="py-3.5 px-4">
                         {inv.dueAmount > 0 ? (
                           <button
-                            onClick={() => handleSendReminder(studentObj?.name || 'Student', studentObj?.parentPhone || '+1 (555) 000')}
+                            onClick={() => handleSendReminder(studentObj?.name || 'Student', studentObj?.parentPhone || '+91 90436 33545')}
                             className="px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-[11px] transition-colors"
                           >
                             Send Reminder

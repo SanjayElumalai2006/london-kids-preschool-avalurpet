@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Heart, Calendar, CheckCircle2, AlertTriangle, 
-  DollarSign, Star, BookOpen, Download, 
+  IndianRupee, Star, BookOpen, Download, 
   Clock, Award, Camera, FileText, Bell, Sparkles 
 } from '@/components/Icons';
 import PaymentModal from '@/components/PaymentModal';
@@ -270,11 +270,11 @@ export default function ParentPortalPage() {
               <div className="flex justify-between items-center text-slate-500">
                 <span className="text-xs font-bold uppercase">Fee Balance</span>
                 <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                  <DollarSign size={18} />
+                  <IndianRupee size={18} />
                 </span>
               </div>
               <p className="text-3xl font-black text-slate-800">
-                ${invoice?.dueAmount.toLocaleString() || '0'}
+                ₹{invoice?.dueAmount.toLocaleString() || '0'}
               </p>
               <div className="flex justify-between items-center text-[11px]">
                 <span className="text-slate-500">Due: {invoice?.dueDate}</span>
@@ -660,10 +660,10 @@ export default function ParentPortalPage() {
             {invoice.dueAmount > 0 && (
               <button
                 onClick={() => setPayModalOpen(true)}
-                className="px-6 py-3 rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm shadow-md shadow-emerald-200 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm shadow-md shadow-emerald-200 transition-all flex items-center gap-2 cursor-pointer"
               >
-                <DollarSign size={18} />
-                <span>Pay Fee (${invoice.dueAmount.toLocaleString()})</span>
+                <IndianRupee size={18} />
+                <span>Pay Fee (₹{invoice.dueAmount.toLocaleString()})</span>
               </button>
             )}
           </div>
@@ -672,15 +672,15 @@ export default function ParentPortalPage() {
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
               <span className="text-slate-400 block text-[10px] font-bold uppercase">Total Annual Fee</span>
-              <p className="text-xl font-black text-slate-800">${invoice.totalAnnualFee.toLocaleString()}</p>
+              <p className="text-xl font-black text-slate-800">₹{invoice.totalAnnualFee.toLocaleString()}</p>
             </div>
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
               <span className="text-emerald-700 block text-[10px] font-bold uppercase">Amount Paid</span>
-              <p className="text-xl font-black text-emerald-800">${invoice.paidAmount.toLocaleString()}</p>
+              <p className="text-xl font-black text-emerald-800">₹{invoice.paidAmount.toLocaleString()}</p>
             </div>
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
               <span className="text-rose-700 block text-[10px] font-bold uppercase">Balance Due</span>
-              <p className="text-xl font-black text-rose-800">${invoice.dueAmount.toLocaleString()}</p>
+              <p className="text-xl font-black text-rose-800">₹{invoice.dueAmount.toLocaleString()}</p>
             </div>
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
               <span className="text-amber-700 block text-[10px] font-bold uppercase">Due Date</span>
@@ -708,7 +708,7 @@ export default function ParentPortalPage() {
                     <tr key={rec.id} className="hover:bg-slate-50">
                       <td className="py-3 px-4 font-bold text-slate-800">{rec.receiptNo}</td>
                       <td className="py-3 px-4 text-slate-500">{rec.date}</td>
-                      <td className="py-3 px-4 font-extrabold text-emerald-600">${rec.amount.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-extrabold text-emerald-600">₹{rec.amount.toLocaleString()}</td>
                       <td className="py-3 px-4">
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
                           {rec.paymentMethod}

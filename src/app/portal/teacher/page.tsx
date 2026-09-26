@@ -6,11 +6,14 @@ import {
   Camera, Star, BookOpen, Send, Plus, Sparkles 
 } from '@/components/Icons';
 import { getStore, saveStore } from '@/lib/store';
-import { Student, AttendanceStatus, ActivityPost, TeacherReview, StudentResult, Notice, EventPhoto } from '@/types';
+import { Student, AttendanceStatus, ActivityPost, TeacherReview, StudentResult, Notice, EventPhoto, SchoolLevel, User } from '@/types';
 import { processImageFile } from '@/lib/imageUpload';
 import PhotoUploadDropzone from '@/components/PhotoUploadDropzone';
 
 export default function TeacherPortalPage() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<SchoolLevel | 'ALL'>('LKG');
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [classStudents, setClassStudents] = useState<Student[]>([]);
   const [activeTab, setActiveTab] = useState<'ATTENDANCE' | 'ACTIVITIES' | 'REVIEWS' | 'RESULTS' | 'NOTICES'>('ATTENDANCE');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -53,18 +56,44 @@ export default function TeacherPortalPage() {
 
   const loadData = () => {
     const store = getStore();
-    // Security Scoping: Teacher strictly accesses ONLY assigned class (LKG) and active students
-    const lkgStudents = store.students.filter(s => (s.status === 'ACTIVE' || !s.status) && s.level === 'LKG');
-    setClassStudents(lkgStudents);
+    const user = store.currentUser;
+    setCurrentUser(user);
 
-    if (lkgStudents.length > 0 && !reviewStudentId) {
-      setReviewStudentId(lkgStudents[0].id);
+    const active = store.students.filter(s => s.status === 'ACTIVE' || !s.status);
+    setAllStudents(active);
+
+    const initialLvl: SchoolLevel | 'ALL' = user?.assignedClass || selectedLevel || 'LKG';
+    setSelectedLevel(initialLvl);
+
+    const filtered = active.filter(s => initialLvl === 'ALL' || s.level === initialLvl);
+    setClassStudents(filtered);
+
+    if (filtered.length > 0) {
+      setReviewStudentId(prev => (prev && filtered.some(s => s.id === prev)) ? prev : filtered[0].id);
     }
 
     // Default all to PRESENT if not marked yet
     const initialMap: Record<string, AttendanceStatus> = {};
-    lkgStudents.forEach(s => {
+    filtered.forEach(s => {
       initialMap[s.id] = 'PRESENT';
+    });
+    setAttendanceMap(initialMap);
+  };
+
+  const handleLevelChange = (lvl: SchoolLevel | 'ALL') => {
+    setSelectedLevel(lvl);
+    const store = getStore();
+    const active = store.students.filter(s => s.status === 'ACTIVE' || !s.status);
+    const filtered = active.filter(s => lvl === 'ALL' || s.level === lvl);
+    setClassStudents(filtered);
+
+    if (filtered.length > 0) {
+      setReviewStudentId(filtered[0].id);
+    }
+
+    const initialMap: Record<string, AttendanceStatus> = {};
+    filtered.forEach(s => {
+      initialMap[s.id] = attendanceMap[s.id] || 'PRESENT';
     });
     setAttendanceMap(initialMap);
   };
@@ -74,7 +103,7 @@ export default function TeacherPortalPage() {
     const store = getStore();
     const updated = store.students.map(s => s.id === editingStudent.id ? { ...s, photo: newPhoto, updatedAt: new Date().toISOString() } : s);
     saveStore({ students: updated });
-    setClassStudents(updated.filter(s => (s.status === 'ACTIVE' || !s.status) && s.level === 'LKG'));
+    setClassStudents(updated.filter(s => (s.status === 'ACTIVE' || !s.status) && (selectedLevel === 'ALL' || s.level === selectedLevel)));
     setEditingStudent(null);
   };
 
@@ -95,13 +124,16 @@ export default function TeacherPortalPage() {
     e.preventDefault();
     const store = getStore();
     const today = new Date().toISOString().split('T')[0];
+    const marker = currentUser?.name 
+      ? `${currentUser.name} (${currentUser.role === 'STAFF' ? 'Campus Staff' : 'Class Educator'})`
+      : 'Class Educator';
 
     const newRecords = Object.entries(attendanceMap).map(([sId, status]) => ({
       id: `att-${Date.now()}-${sId}`,
       studentId: sId,
       date: today,
       status,
-      markedBy: 'Ms. Meena Devi (Class Teacher)'
+      markedBy: marker
     }));
 
     saveStore({
@@ -116,16 +148,20 @@ export default function TeacherPortalPage() {
     e.preventDefault();
     const store = getStore();
     const today = new Date().toISOString().split('T')[0];
+    const author = currentUser?.name 
+      ? `${currentUser.name} (${currentUser.role === 'STAFF' ? 'Staff' : 'Educator'})`
+      : 'Class Educator';
+    const targetLevel: SchoolLevel = selectedLevel === 'ALL' ? 'PLAY_SCHOOL' : selectedLevel;
 
     const newAct: ActivityPost = {
       id: `act-${Date.now()}`,
-      level: 'LKG',
+      level: targetLevel,
       title: newActivity.title,
       description: newActivity.description,
       date: today,
       imageUrl: newActivity.imageUrl,
       category: newActivity.category,
-      createdBy: 'Ms. Meena Devi (Class Teacher)'
+      createdBy: author
     };
 
     let updatedGallery = store.gallery || [];
@@ -146,9 +182,9 @@ export default function TeacherPortalPage() {
         date: today,
         category: catMap[newActivity.category] || 'CLASSROOM',
         imageUrl: newActivity.imageUrl,
-        uploadedBy: 'Ms. Meena Devi',
+        uploadedBy: currentUser?.name || 'Class Educator',
         showOnPublicWebsite: true,
-        targetLevel: 'LKG',
+        targetLevel: targetLevel,
         createdAt: new Date().toISOString(),
       };
       updatedGallery = [newPhoto, ...updatedGallery];
@@ -177,8 +213,8 @@ export default function TeacherPortalPage() {
     const newRev: TeacherReview = {
       id: `rev-${Date.now()}`,
       studentId: reviewStudentId,
-      teacherId: 'user-teacher-lkg',
-      teacherName: 'Ms. Meena Devi',
+      teacherId: currentUser?.id || 'user-teacher-lk',
+      teacherName: currentUser?.name || 'Class Educator',
       date: new Date().toISOString().split('T')[0],
       socialSkills: reviewForm.socialSkills,
       fineMotor: reviewForm.fineMotor,
@@ -200,13 +236,17 @@ export default function TeacherPortalPage() {
   const handlePostNotice = (e: React.FormEvent) => {
     e.preventDefault();
     const store = getStore();
+    const author = currentUser?.name 
+      ? `${currentUser.name} (${currentUser.role === 'STAFF' ? 'Staff' : 'Educator'})`
+      : 'Class Educator';
+
     const newNot: Notice = {
       id: `not-${Date.now()}`,
       title: noticeForm.title,
       content: noticeForm.content,
-      targetLevel: 'LKG',
+      targetLevel: selectedLevel,
       date: new Date().toISOString().split('T')[0],
-      authorName: 'Ms. Meena Devi (Class Teacher)',
+      authorName: author,
       priority: 'NORMAL',
       category: noticeForm.category
     };
@@ -220,23 +260,53 @@ export default function TeacherPortalPage() {
     setTimeout(() => setNoticeSaved(false), 3000);
   };
 
+  const levelDisplayNames: Record<SchoolLevel | 'ALL', string> = {
+    PLAY_SCHOOL: 'Play School (1.5 – 2.5 yrs)',
+    NURSERY: 'Nursery (2.5 – 3.5 yrs)',
+    LKG: 'LKG (3.5 – 4.5 yrs)',
+    UKG: 'UKG (4.5 – 5.5 yrs)',
+    ALL: 'All Preschool Classes'
+  };
+
   return (
     <div className="space-y-6">
-      {/* Teacher Header Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-100 shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Teacher / Staff Header Banner */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-100 shadow-md flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <span className="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-extrabold text-[10px] uppercase">
-              Assigned Class
+              {currentUser?.role === 'STAFF' ? 'Campus Staff & Support' : 'Class Educator Portal'}
             </span>
+            {currentUser?.assignedSection && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
+                Section {currentUser.assignedSection}
+              </span>
+            )}
             <span className="text-xs text-slate-500 font-bold">Academic Year 2026-27</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            LKG - Section A (Butterflies)
+            {levelDisplayNames[selectedLevel]}
           </h1>
           <p className="text-xs text-slate-600 mt-1">
-            Class Educator: <strong>Ms. Meena Devi</strong> • Total Students: <strong>{classStudents.length}</strong>
+            Logged in as: <strong>{currentUser?.name || 'Class Educator'}</strong> • Active Enrolled: <strong>{classStudents.length} Students</strong>
           </p>
+
+          {/* Level Switcher Pills */}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {(['PLAY_SCHOOL', 'NURSERY', 'LKG', 'UKG', 'ALL'] as (SchoolLevel | 'ALL')[]).map(lvl => (
+              <button
+                key={lvl}
+                onClick={() => handleLevelChange(lvl)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  selectedLevel === lvl
+                    ? 'bg-sky-600 text-white shadow-sm shadow-sky-200'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                {lvl === 'ALL' ? 'All Classes' : lvl.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -252,6 +322,7 @@ export default function TeacherPortalPage() {
           </div>
         </div>
       </div>
+
 
       {/* Tabs */}
       <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none">

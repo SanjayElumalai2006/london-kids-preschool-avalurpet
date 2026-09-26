@@ -38,6 +38,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       allowed = false;
     } else if (pathname.startsWith('/portal/admin') && role !== 'ADMIN' && role !== 'OWNER' && role !== 'PRINCIPAL') {
       allowed = false;
+    } else if (pathname.startsWith('/portal/staff') && !['STAFF', 'TEACHER', 'ADMIN', 'OWNER', 'PRINCIPAL'].includes(role)) {
+      allowed = false;
     } else if (pathname.startsWith('/portal/teacher') && !['TEACHER', 'STAFF', 'ADMIN', 'OWNER', 'PRINCIPAL'].includes(role)) {
       allowed = false;
     } else if (pathname.startsWith('/portal/parent') && !['PARENT', 'STUDENT', 'ADMIN', 'OWNER', 'PRINCIPAL'].includes(role)) {
@@ -48,7 +50,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       if (role === 'OWNER') router.replace('/portal/owner');
       else if (role === 'PRINCIPAL') router.replace('/portal/principal');
       else if (role === 'ADMIN') router.replace('/portal/admin');
-      else if (role === 'TEACHER' || role === 'STAFF') router.replace('/portal/teacher');
+      else if (role === 'STAFF') router.replace('/portal/staff');
+      else if (role === 'TEACHER') router.replace('/portal/teacher');
       else router.replace('/portal/parent');
       return false;
     }
@@ -145,9 +148,17 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         { href: '/gallery', label: 'School Events Gallery', icon: <BookOpen size={18} /> },
       ];
     }
-    if (currentRole === 'TEACHER' || currentRole === 'STAFF') {
+    if (currentRole === 'STAFF') {
+      return [
+        { href: '/portal/staff', label: 'Staff & Campus Ops', icon: <Users size={18} /> },
+        { href: '/portal/teacher', label: 'Classroom & Attendance', icon: <BookOpen size={18} /> },
+        { href: '/gallery', label: 'School Events Gallery', icon: <BookOpen size={18} /> },
+      ];
+    }
+    if (currentRole === 'TEACHER') {
       return [
         { href: '/portal/teacher', label: 'Classroom & Students', icon: <BookOpen size={18} /> },
+        { href: '/portal/staff', label: 'Campus Support', icon: <Users size={18} /> },
         { href: '/gallery', label: 'School Events Gallery', icon: <BookOpen size={18} /> },
       ];
     }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  Users, DollarSign, Award, TrendingUp, 
+  Users, IndianRupee, Award, TrendingUp, 
   Settings, CheckCircle2, ShieldCheck, Download, 
   BookOpen, Calendar, Sparkles, Plus, Star 
 } from '@/components/Icons';
@@ -100,13 +100,13 @@ export default function OwnerPortalPage() {
 
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">Fee Revenue Collected</span>
-          <p className="text-3xl font-black text-emerald-600">${totalRevenue.toLocaleString()}</p>
+          <p className="text-3xl font-black text-emerald-600">₹{totalRevenue.toLocaleString()}</p>
           <p className="text-[11px] text-emerald-700 font-medium">88% Recovery Rate</p>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
           <span className="text-[10px] font-bold uppercase text-slate-400">Pending Fee Dues</span>
-          <p className="text-3xl font-black text-rose-600">${totalDues.toLocaleString()}</p>
+          <p className="text-3xl font-black text-rose-600">₹{totalDues.toLocaleString()}</p>
           <p className="text-[11px] text-slate-500">Unsettled student balances</p>
         </div>
 
@@ -174,7 +174,7 @@ export default function OwnerPortalPage() {
                 <div key={idx} className="space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-700">
                     <span>{m.month}</span>
-                    <span className="font-mono text-slate-900">${m.amount.toLocaleString()}</span>
+                    <span className="font-mono text-slate-900">₹{m.amount.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                     <div className={`${m.color} h-full rounded-full transition-all duration-700`} style={{ width: `${m.percent}%` }}></div>
@@ -195,7 +195,7 @@ export default function OwnerPortalPage() {
                   <span className="text-2xl">🧸</span>
                   <div>
                     <h4 className="font-bold text-sm text-slate-800">Play School</h4>
-                    <span className="text-[11px] text-slate-500">Annual Fee: ${settings.fees.PLAY_SCHOOL}</span>
+                    <span className="text-[11px] text-slate-500">Annual Fee: ₹{settings.fees.PLAY_SCHOOL.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -209,7 +209,7 @@ export default function OwnerPortalPage() {
                   <span className="text-2xl">🎨</span>
                   <div>
                     <h4 className="font-bold text-sm text-slate-800">Nursery</h4>
-                    <span className="text-[11px] text-slate-500">Annual Fee: ${settings.fees.NURSERY}</span>
+                    <span className="text-[11px] text-slate-500">Annual Fee: ₹{settings.fees.NURSERY.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -223,7 +223,7 @@ export default function OwnerPortalPage() {
                   <span className="text-2xl">🦋</span>
                   <div>
                     <h4 className="font-bold text-sm text-slate-800">LKG (Lower KG)</h4>
-                    <span className="text-[11px] text-slate-500">Annual Fee: ${settings.fees.LKG}</span>
+                    <span className="text-[11px] text-slate-500">Annual Fee: ₹{settings.fees.LKG.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -237,7 +237,7 @@ export default function OwnerPortalPage() {
                   <span className="text-2xl">🦉</span>
                   <div>
                     <h4 className="font-bold text-sm text-slate-800">UKG (Upper KG)</h4>
-                    <span className="text-[11px] text-slate-500">Annual Fee: ${settings.fees.UKG}</span>
+                    <span className="text-[11px] text-slate-500">Annual Fee: ₹{settings.fees.UKG.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="text-right">
@@ -410,7 +410,7 @@ export default function OwnerPortalPage() {
 
             {/* Annual Tuition Fees Configuration */}
             <div className="pt-4 border-t border-slate-200">
-              <h3 className="font-extrabold text-sm text-slate-900 mb-3">Annual Tuition Fee per Level ($)</h3>
+              <h3 className="font-extrabold text-sm text-slate-900 mb-3">Annual Tuition Fee per Level (₹)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Play School</label>
@@ -496,7 +496,7 @@ export default function OwnerPortalPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 {[
-                  { time: '2026-09-18 13:45', user: 'Neha Sharma (Parent)', action: 'Fee Payment ($1,000 via UPI)', entity: 'INV-2026-0941', status: 'SUCCESS' },
+                  { time: '2026-09-18 13:45', user: 'Neha Sharma (Parent)', action: 'Fee Payment (₹10,000 via UPI)', entity: 'INV-2026-0941', status: 'SUCCESS' },
                   { time: '2026-09-18 11:20', user: 'Ms. Priya Patel (Teacher)', action: 'Attendance Submission (18 Marked)', entity: 'Class LKG Butterflies', status: 'SUCCESS' },
                   { time: '2026-09-17 14:30', user: 'Sneha Chawla (Guest)', action: 'Online Admission Enquiry', entity: 'Nursery Level', status: 'PENDING REVIEW' },
                   { time: '2026-09-16 10:15', user: 'Mr. Vikram Malhotra (Admin)', action: 'Dispatched Fee Reminder SMS', entity: '3 Students', status: 'SUCCESS' },
