@@ -44,9 +44,15 @@ export default function Navbar() {
               <ShieldCheck size={13} /> Safe &amp; CCTV Monitored
             </span>
             <span className="opacity-50 hidden lg:inline">|</span>
-            <span className="hidden lg:flex items-center gap-1 text-amber-300 font-extrabold text-[11px] tracking-wide">
-              <Sparkles size={11} className="text-yellow-300" /> 7hills web solution
-            </span>
+            <a
+              href="tel:9500118875"
+              className="hidden lg:flex items-center gap-1.5 text-amber-300 hover:text-amber-200 font-extrabold text-[11px] tracking-wide transition-colors"
+              title="Contact 7hills web solution: 9500118875"
+            >
+              <Sparkles size={11} className="text-yellow-300" />
+              <span>7hills web solution:</span>
+              <span className="underline decoration-amber-400/50">9500118875</span>
+            </a>
           </div>
         </div>
       </div>

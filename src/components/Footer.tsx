@@ -146,11 +146,19 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
             <p>© {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.</p>
             <span className="hidden sm:inline text-slate-700">•</span>
-            <p className="flex items-center gap-1.5 text-slate-400">
+            <p className="flex flex-wrap items-center gap-1.5 text-slate-400">
               <span>Crafted &amp; Developed by</span>
               <span className="font-extrabold text-amber-400 hover:text-amber-300 tracking-wide transition-colors">
                 7hills web solution
               </span>
+              <span className="text-slate-600">(Contact:</span>
+              <a
+                href="tel:9500118875"
+                className="text-amber-300 hover:text-amber-200 font-bold hover:underline"
+              >
+                9500118875
+              </a>
+              <span className="text-slate-600">)</span>
             </p>
           </div>
           <div className="flex items-center gap-1">

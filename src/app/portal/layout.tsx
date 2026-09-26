@@ -304,9 +304,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </button>
 
           {/* Tech Partner credit */}
-          <div className="pt-1 text-center">
+          <div className="pt-1 text-center space-y-0.5">
             <p className="text-[10px] text-slate-400 font-medium">
-              Platform by <span className="font-bold text-slate-600">7hills web solution</span>
+              Platform by <span className="font-bold text-slate-700">7hills web solution</span>
+            </p>
+            <p className="text-[9px] text-slate-400">
+              Support: <a href="tel:9500118875" className="font-bold text-slate-600 hover:text-red-600 hover:underline">9500118875</a>
             </p>
           </div>
         </div>
