@@ -148,7 +148,6 @@ export async function GET() {
       enquiriesDocs = await AdmissionEnquiryModel.find({}).lean();
     }
 
-    let galleryDocs = arguments ? (arguments as any) : null;
     // Auto-seed gallery if empty
     let currentGalleryDocs = await EventPhotoModel.find({}).lean();
     if (currentGalleryDocs.length === 0 && INITIAL_GALLERY_PHOTOS.length > 0) {

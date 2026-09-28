@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "node scripts/seed-db.js",
-    "db:revive": "node scripts/seed-db.js"
+    "db:revive": "node scripts/seed-db.js",
+    "test:e2e": "node scripts/test-e2e-data.js"
   },
   "dependencies": {
     "mongoose": "^9.10.1",

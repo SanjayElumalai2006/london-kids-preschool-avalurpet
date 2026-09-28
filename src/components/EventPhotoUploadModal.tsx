@@ -398,7 +398,7 @@ export default function EventPhotoUploadModal({
                 onChange={(e) => setPostToParentFeed(e.target.checked)}
                 className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
               />
-              <span>Also broadcast to Parents' Activity Feed in Parent Portal</span>
+              <span>Also broadcast to Parents&apos; Activity Feed in Parent Portal</span>
             </label>
           </div>
 
