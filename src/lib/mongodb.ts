@@ -33,7 +33,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   // In local environments (development or production build), fall back to local MongoDB.
   const uri = process.env.MONGODB_URI || (process.env.VERCEL 
     ? '' 
-    : 'mongodb://127.0.0.1:27017/londonkids_preschool');
+    : 'mongodb://127.0.0.1:27017/pre-school');
 
   if (!uri) {
     throw new Error(

@@ -43,9 +43,10 @@ export async function GET() {
       status: isConnected ? 'CONNECTED' : 'CONNECTING',
       environment: process.env.NODE_ENV || 'development',
       provider: isAtlas ? 'MongoDB Atlas (Cloud)' : isLocal ? 'Local MongoDB Service' : 'Custom MongoDB Host',
-      database: mongoose.connection.db?.databaseName || 'londonkids_preschool',
+      database: mongoose.connection.db?.databaseName || 'pre-school',
       host: isLocal ? '127.0.0.1:27017' : host,
       counts,
+      version: '0.2.0',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

@@ -144,7 +144,7 @@ export default function Footer() {
         {/* Copyright & Credits */}
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
-            <p>© {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {SCHOOL_NAME}. All rights reserved. <span className="ml-1 text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">v0.2.0</span></p>
             <span className="hidden sm:inline text-slate-700">•</span>
             <p className="flex flex-wrap items-center gap-1.5 text-slate-400">
               <span>Crafted &amp; Developed by</span>

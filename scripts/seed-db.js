@@ -47,7 +47,7 @@ function loadEnv() {
 
 loadEnv();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/londonkids_preschool';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pre-school';
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
