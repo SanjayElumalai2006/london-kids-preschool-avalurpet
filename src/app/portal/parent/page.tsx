@@ -36,21 +36,19 @@ export default function ParentPortalPage() {
     // Filter only active students
     const activeStudents = store.students.filter(s => s.status === 'ACTIVE' || !s.status);
 
-    // Find linked students for current parent
-    let userChildren = activeStudents.filter(s => linkedIds.includes(s.id));
-    if (userChildren.length === 0 && activeStudents.length > 0) {
-      userChildren = [activeStudents[0]];
-    }
+    // Find linked students for current parent - STRICT ISOLATION
+    const userChildren = activeStudents.filter(s => linkedIds.includes(s.id));
     setLinkedStudents(userChildren);
+
+    if (userChildren.length === 0) {
+      setStudent(null);
+      return;
+    }
 
     const activeChild = (student && userChildren.some(c => c.id === student.id))
       ? userChildren.find(c => c.id === student.id)!
       : userChildren[0];
 
-    if (!activeChild) {
-      setStudent(null);
-      return;
-    }
     setStudent(activeChild);
 
     // Scoped attendance

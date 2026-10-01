@@ -85,14 +85,18 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     };
   }, [verifySession]);
 
-  const handleLogout = () => {
-    // 1. Clear current user from store
+  const handleLogout = async () => {
+    // 1. Invalidate server-side session cookie
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    // 2. Clear current user from store
     saveStore({ currentUser: null });
-    // 2. Clear any session storage
+    // 3. Clear any session storage
     try {
       sessionStorage.clear();
     } catch (e) {}
-    // 3. Replace location so browser history does not navigate back to protected page
+    // 4. Replace location so browser history does not navigate back to protected page
     window.location.replace('/login');
   };
 

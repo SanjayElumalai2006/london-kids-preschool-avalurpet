@@ -13,6 +13,11 @@ import {
 import { SchoolLevel } from '@/types';
 import { getStore, saveStore } from '@/lib/store';
 import { getWhatsAppEnquiryUrl } from '@/lib/whatsapp';
+import TurnstileCaptcha from '@/components/TurnstileCaptcha';
+import {
+  SCHOOL_NAME, SCHOOL_ADDRESS, SCHOOL_CITY,
+  SCHOOL_PHONE, SCHOOL_TIMINGS, SCHOOL_OFFICE_HR,
+} from '@/lib/brand';
 
 export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -29,6 +34,10 @@ export default function HomePage() {
     targetLevel: 'PLAY_SCHOOL' as SchoolLevel,
     message: ''
   });
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [consentWhatsApp, setConsentWhatsApp] = useState(true);
+  const [inlineSubmitting, setInlineSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const [enquirySent, setEnquirySent] = useState(false);
 
   const handleOpenAdmission = (level: SchoolLevel) => {
@@ -36,27 +45,72 @@ export default function HomePage() {
     setModalOpen(true);
   };
 
-  const handleInlineEnquirySubmit = (e: React.FormEvent) => {
+  const handleInlineEnquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const store = getStore();
+    if (!captchaToken) {
+      setInlineError('Please complete the verification challenge below.');
+      return;
+    }
+    const cleanPhone = enquiryForm.phone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setInlineError('Please provide a valid 10-digit mobile phone number.');
+      return;
+    }
+
+    setInlineSubmitting(true);
+    setInlineError(null);
+
     const newEnquiry = {
       id: `enq-${Date.now()}`,
-      parentName: enquiryForm.parentName,
-      email: enquiryForm.email,
-      phone: enquiryForm.phone,
-      childName: enquiryForm.childName,
-      childAge: enquiryForm.childAge,
+      parentName: enquiryForm.parentName.trim(),
+      email: enquiryForm.email.trim(),
+      phone: enquiryForm.phone.trim(),
+      childName: enquiryForm.childName.trim(),
+      childAge: enquiryForm.childAge.trim(),
       targetLevel: enquiryForm.targetLevel,
-      message: enquiryForm.message || 'Campus visit & admission enquiry from homepage contact section.',
-      submittedAt: new Date().toLocaleString(),
+      message: enquiryForm.message.trim() || 'Campus visit & admission enquiry from homepage contact section.',
+      submittedAt: new Date().toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
       status: 'NEW' as const
     };
 
-    saveStore({
-      enquiries: [newEnquiry, ...store.enquiries]
-    });
+    try {
+      const res = await fetch('/api/enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newEnquiry,
+          turnstileToken: captchaToken,
+        }),
+      });
 
-    setEnquirySent(true);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setInlineError(json.error || 'Failed to submit enquiry. Please verify details and try again.');
+        setInlineSubmitting(false);
+        return;
+      }
+
+      try {
+        const store = getStore();
+        saveStore({
+          enquiries: [newEnquiry, ...store.enquiries]
+        });
+      } catch {
+        // Non-blocking
+      }
+
+      setInlineSubmitting(false);
+      setEnquirySent(true);
+    } catch {
+      setInlineError('Network connection issue. Form data is preserved; please retry.');
+      setInlineSubmitting(false);
+    }
   };
 
   // Gallery items
@@ -806,7 +860,7 @@ export default function HomePage() {
                   <div>
                     <h4 className="font-bold text-slate-800">Campus Location</h4>
                     <p className="text-xs text-slate-600 mt-0.5">
-                      Main Road, Near Bus Stand, Avalurpet, Avalurpet, Tamil Nadu � 606 702
+                      {SCHOOL_ADDRESS},<br />{SCHOOL_CITY}
                     </p>
                   </div>
                 </div>
@@ -817,7 +871,7 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800">Admissions Phone & WhatsApp</h4>
-                    <p className="text-xs text-slate-600 mt-0.5">+91 90436 33545</p>
+                    <p className="text-xs text-slate-600 mt-0.5">{SCHOOL_PHONE}</p>
                   </div>
                 </div>
 
@@ -827,27 +881,33 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800">Visiting Hours</h4>
-                    <p className="text-xs text-slate-600 mt-0.5">Monday to Friday: 9:00 AM – 3:00 PM</p>
+                    <p className="text-xs text-slate-600 mt-0.5">{SCHOOL_TIMINGS} ({SCHOOL_OFFICE_HR})</p>
                   </div>
                 </div>
               </div>
 
-              {/* Simulated Location Map Card */}
+              {/* Location Map Card */}
               <div className="rounded-3xl overflow-hidden border-2 border-amber-200 bg-white shadow-md p-4 space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                  <span className="flex items-center gap-1">📍 Campus Map (Sunflower Gardens)</span>
-                  <span className="text-emerald-600">Open in GPS</span>
+                  <span className="flex items-center gap-1">📍 Campus Map — Avalurpet</span>
+                  <a
+                    href="https://maps.google.com/?q=Avalurpet,Tamil+Nadu"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-600 hover:underline"
+                  >
+                    Open in Google Maps
+                  </a>
                 </div>
-                <div className="h-44 rounded-2xl bg-amber-100 flex items-center justify-center relative overflow-hidden border border-amber-200">
-                  <div className="absolute inset-0 bg-radial from-amber-200 to-amber-300 opacity-70"></div>
-                  <div className="relative text-center p-4">
-                    <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center mx-auto shadow-md animate-bounce-subtle">
-                      <Sun size={20} />
-                    </div>
-                    <p className="font-extrabold text-xs text-slate-800 mt-2">London Kids Preschool Avalurpet</p>
-                    <p className="text-[11px] text-slate-600">Rainbow Ave & 5th Crossing</p>
-                  </div>
-                </div>
+                <iframe
+                  title="Campus Map Location"
+                  src="https://maps.google.com/maps?q=Avalurpet,Tamil+Nadu&output=embed"
+                  width="100%"
+                  height="180"
+                  className="rounded-2xl border border-amber-200"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
             </div>
 
@@ -863,27 +923,31 @@ export default function HomePage() {
                       Enquiry Submitted Successfully! 🎈
                     </h3>
                     <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                      Thank you, <strong>{enquiryForm.parentName}</strong>. We have logged your request for <strong>{enquiryForm.childName}</strong>. Your enquiry is now live in our Admin Portal, and our counseling office will contact you today!
+                      Thank you, <strong>{enquiryForm.parentName}</strong>. We have logged your request for <strong>{enquiryForm.childName}</strong> in our verified admissions portal, and our counseling office will contact you promptly!
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                       <a
                         href={getWhatsAppEnquiryUrl({
-                          parentName: enquiryForm.parentName,
-                          childName: enquiryForm.childName,
-                          childAge: enquiryForm.childAge,
-                          program: enquiryForm.targetLevel,
-                          phone: enquiryForm.phone
+                          parentName: consentWhatsApp ? enquiryForm.parentName : undefined,
+                          childName: consentWhatsApp ? enquiryForm.childName : undefined,
+                          childAge: consentWhatsApp ? enquiryForm.childAge : undefined,
+                          program: consentWhatsApp ? enquiryForm.targetLevel : undefined,
+                          phone: consentWhatsApp ? enquiryForm.phone : undefined,
+                          hasConsent: consentWhatsApp,
                         })}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 transition-colors flex items-center gap-2"
+                        className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-200 transition-colors flex items-center gap-2 cursor-pointer"
                       >
                         <MessageCircle size={15} />
                         <span>Chat on WhatsApp (+91 90436 33545)</span>
                       </a>
                       <button
-                        onClick={() => setEnquirySent(false)}
-                        className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors"
+                        onClick={() => {
+                          setEnquirySent(false);
+                          setCaptchaToken('');
+                        }}
+                        className="px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                       >
                         Send Another Enquiry
                       </button>
@@ -897,9 +961,15 @@ export default function HomePage() {
                     <h3 className="text-2xl font-black text-slate-800 mb-2">
                       Take The First Step Today
                     </h3>
-                    <p className="text-xs text-slate-500 mb-6">
+                    <p className="text-xs text-slate-500 mb-5">
                       Fill out this quick form and our admissions coordinator will reach out promptly with fee brochures and tour dates.
                     </p>
+
+                    {inlineError && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                        <span>⚠️ {inlineError}</span>
+                      </div>
+                    )}
 
                     <form onSubmit={handleInlineEnquirySubmit} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -910,7 +980,7 @@ export default function HomePage() {
                           <input
                             type="text"
                             required
-                            placeholder="e.g. Sarah Jenkins"
+                            placeholder="e.g. Priya Ramesh"
                             value={enquiryForm.parentName}
                             onChange={(e) => setEnquiryForm({ ...enquiryForm, parentName: e.target.value })}
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
@@ -923,7 +993,7 @@ export default function HomePage() {
                           <input
                             type="tel"
                             required
-                            placeholder="+91 90436 33545"
+                            placeholder="e.g. 98401 23456"
                             value={enquiryForm.phone}
                             onChange={(e) => setEnquiryForm({ ...enquiryForm, phone: e.target.value })}
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
@@ -933,11 +1003,10 @@ export default function HomePage() {
 
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Email Address *
+                          Email Address <span className="text-slate-400 font-normal">(Optional)</span>
                         </label>
                         <input
                           type="email"
-                          required
                           placeholder="parent@example.com"
                           value={enquiryForm.email}
                           onChange={(e) => setEnquiryForm({ ...enquiryForm, email: e.target.value })}
@@ -953,7 +1022,7 @@ export default function HomePage() {
                           <input
                             type="text"
                             required
-                            placeholder="e.g. Leo Jenkins"
+                            placeholder="e.g. Aarav Ramesh"
                             value={enquiryForm.childName}
                             onChange={(e) => setEnquiryForm({ ...enquiryForm, childName: e.target.value })}
                             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
@@ -1003,21 +1072,50 @@ export default function HomePage() {
                         />
                       </div>
 
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Verification Security Challenge *
+                        </label>
+                        <TurnstileCaptcha
+                          onVerify={(token) => {
+                            setCaptchaToken(token);
+                            if (inlineError) setInlineError(null);
+                          }}
+                          onError={() => setInlineError('Verification challenge failed. Please retry.')}
+                        />
+                      </div>
+
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <label className="flex items-start gap-2 text-xs text-slate-600 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={consentWhatsApp}
+                            onChange={(e) => setConsentWhatsApp(e.target.checked)}
+                            className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                          />
+                          <span>
+                            Share admission details with school staff when clicking WhatsApp.
+                          </span>
+                        </label>
+                      </div>
+
                       <div className="pt-2 flex flex-col sm:flex-row gap-3">
                         <button
                           type="submit"
-                          className="flex-1 py-3.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm shadow-md shadow-orange-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                          disabled={inlineSubmitting}
+                          className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm shadow-md shadow-orange-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                         >
-                          <span>Submit Admission Enquiry</span>
+                          <span>{inlineSubmitting ? 'Submitting to Admissions Desk…' : 'Submit Admission Enquiry'}</span>
                           <ArrowRight size={18} />
                         </button>
                         <a
                           href={getWhatsAppEnquiryUrl({
-                            parentName: enquiryForm.parentName,
-                            childName: enquiryForm.childName,
-                            childAge: enquiryForm.childAge,
-                            program: enquiryForm.targetLevel,
-                            phone: enquiryForm.phone
+                            parentName: consentWhatsApp ? enquiryForm.parentName : undefined,
+                            childName: consentWhatsApp ? enquiryForm.childName : undefined,
+                            childAge: consentWhatsApp ? enquiryForm.childAge : undefined,
+                            program: consentWhatsApp ? enquiryForm.targetLevel : undefined,
+                            phone: consentWhatsApp ? enquiryForm.phone : undefined,
+                            hasConsent: consentWhatsApp,
                           })}
                           target="_blank"
                           rel="noopener noreferrer"

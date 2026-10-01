@@ -38,6 +38,7 @@ export default function EventPhotoUploadModal({
   const [imageUrl, setImageUrl] = useState('');
   const [showOnPublic, setShowOnPublic] = useState(true);
   const [postToParentFeed, setPostToParentFeed] = useState(true);
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -51,6 +52,16 @@ export default function EventPhotoUploadModal({
     setErrorMsg(null);
     setIsProcessing(true);
     try {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Please select a valid image format (JPEG, PNG, or WebP).');
+      }
+
+      const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_SIZE_BYTES) {
+        throw new Error('Image file is too large. Maximum allowed size is 5MB.');
+      }
+
       // Compress to high definition max 1200px width/height and 0.82 quality
       const optimized = await processImageFile(file, 1200, 0.82);
       setImageUrl(optimized);
@@ -96,6 +107,11 @@ export default function EventPhotoUploadModal({
 
     if (!title.trim()) {
       setErrorMsg('Please enter an event title.');
+      return;
+    }
+
+    if (!consentConfirmed) {
+      setErrorMsg('Please verify and confirm that parental media consent is on file for children in this photo.');
       return;
     }
 
@@ -399,6 +415,22 @@ export default function EventPhotoUploadModal({
                 className="w-4 h-4 rounded text-red-600 focus:ring-red-500"
               />
               <span>Also broadcast to Parents&apos; Activity Feed in Parent Portal</span>
+            </label>
+          </div>
+
+          {/* Parental Privacy Consent Checkbox */}
+          <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl">
+            <label className="flex items-start gap-2.5 text-xs text-amber-950 font-semibold cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={consentConfirmed}
+                onChange={(e) => setConsentConfirmed(e.target.checked)}
+                className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 mt-0.5 shrink-0"
+              />
+              <span>
+                <strong>Child Privacy &amp; Parental Consent Verified *</strong>: I confirm that parental media release consent has been formally verified for all children shown in this image in compliance with school privacy guidelines.
+              </span>
             </label>
           </div>
 

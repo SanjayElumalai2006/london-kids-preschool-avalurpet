@@ -36,7 +36,7 @@ export const DEMO_USERS: User[] = [
     status: 'ACTIVE',
     createdAt: '2026-09-19',
     updatedAt: '2026-09-19',
-    passwordHash: hashPasswordSync('90436 33545'),
+    passwordHash: hashPasswordSync('Director@2026!'),
     emailVerified: true,
     mustChangePassword: false
   },

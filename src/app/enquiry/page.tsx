@@ -75,7 +75,7 @@ export default function EnquiryPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
       return;
@@ -102,15 +102,24 @@ export default function EnquiryPage() {
       status: 'NEW' as const,
     };
 
-    setTimeout(async () => {
-      try {
-        await fetch('/api/enquiry', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(enquiryPayload),
+    try {
+      const res = await fetch('/api/enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...enquiryPayload,
+          turnstileToken: captchaToken,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        setFieldErrors({
+          general: json.error || 'Failed to submit admission enquiry. Please verify details and try again.',
         });
-      } catch (err) {
-        console.warn('Direct MongoDB enquiry endpoint deferred (offline fallback active):', err);
+        setLoading(false);
+        return;
       }
 
       const store = getStore();
@@ -122,26 +131,30 @@ export default function EnquiryPage() {
       setLoading(false);
       setSent(true);
 
-      // Open WhatsApp only after successful save and user consent
+      // Open WhatsApp only after verified save and explicit user consent
       if (consentWhatsApp) {
         const waUrl = getWhatsAppEnquiryUrl({
           parentName: enquiryPayload.parentName,
           childName: enquiryPayload.childName,
           childAge: enquiryPayload.childAge,
           program: enquiryPayload.targetLevel,
-          phone: enquiryPayload.phone
+          phone: enquiryPayload.phone,
+          hasConsent: true,
         });
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       }
-    }, 400);
+    } catch {
+      setFieldErrors({
+        general: 'Could not connect to the school admissions server. Please check your internet connection or call +91 90436 33545 directly.',
+      });
+      setLoading(false);
+    }
   };
 
+  // Safe generic direct WhatsApp URL with zero personal data leakage
   const directWhatsAppUrl = getWhatsAppEnquiryUrl({
-    parentName: form.parentName || undefined,
-    childName: form.childName || undefined,
-    childAge: form.childAge || undefined,
     program: selectedLevel,
-    phone: form.phone || undefined
+    hasConsent: false,
   });
 
   return (
@@ -257,6 +270,12 @@ export default function EnquiryPage() {
 
               {/* Form fields */}
               <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-4">
+                {fieldErrors.general && (
+                  <div className="p-3.5 bg-rose-50 border-2 border-rose-200 rounded-2xl text-xs text-rose-700 font-bold leading-relaxed flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span>{fieldErrors.general}</span>
+                  </div>
+                )}
                 <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1">
                   Step 2 — Child &amp; Parent Details
                 </p>

@@ -38,7 +38,19 @@ export interface User {
   removedBy?: string;
 }
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'STATUS_CHANGE' | 'PASSWORD_RESET' | 'ROLE_CHANGE' | 'REMOVE' | 'RESTORE';
+export type AuditAction = 
+  | 'CREATE' 
+  | 'UPDATE' 
+  | 'STATUS_CHANGE' 
+  | 'PASSWORD_RESET' 
+  | 'ROLE_CHANGE' 
+  | 'REMOVE' 
+  | 'RESTORE'
+  | 'USER_LOGIN'
+  | 'PASSWORD_RESET_REQUESTED'
+  | 'PASSWORD_RESET_COMPLETED'
+  | 'ENQUIRY_SUBMITTED'
+  | 'EMAIL_VERIFIED';
 
 export interface AuditLogEntry {
   id: string;
@@ -46,6 +58,7 @@ export interface AuditLogEntry {
   targetUserId: string;
   targetUserName: string;
   targetUserRole: UserRole;
+  targetType?: string;
   performedBy: string;
   performedByName: string;
   timestamp: string;

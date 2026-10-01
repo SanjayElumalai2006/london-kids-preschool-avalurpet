@@ -584,6 +584,15 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
         return 'bg-rose-100 text-rose-800 border-rose-300 font-extrabold';
       case 'RESTORE':
         return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
+      case 'USER_LOGIN':
+        return 'bg-teal-100 text-teal-800 border-teal-300';
+      case 'PASSWORD_RESET_REQUESTED':
+      case 'PASSWORD_RESET_COMPLETED':
+        return 'bg-amber-100 text-amber-800 border-amber-300';
+      case 'ENQUIRY_SUBMITTED':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+      case 'EMAIL_VERIFIED':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
       default:
         return 'bg-slate-100 text-slate-800 border-slate-300';
     }

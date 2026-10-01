@@ -77,22 +77,40 @@ export default function GalleryPage() {
             Joyful learning, colourful events, festive celebrations, and cherished campus memories at {SCHOOL_NAME}.
           </p>
 
-          {/* Quick Staff Action */}
-          <div className="pt-2 flex items-center justify-center gap-3">
-            <button
-              onClick={() => setUploadModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-red-200 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <Camera size={18} />
-              <span>Post New Event Photo</span>
-            </button>
-
-            <Link
-              href="/portal/admin"
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-colors"
-            >
-              <span>Admin Portal</span>
-            </Link>
+          {/* Staff Upload Action or Parent Public CTAs */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            {isStaff ? (
+              <>
+                <button
+                  onClick={() => setUploadModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-red-200 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  <Camera size={18} />
+                  <span>Post New Event Photo</span>
+                </button>
+                <Link
+                  href="/portal/admin"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-colors"
+                >
+                  <span>Admin Portal</span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/enquiry"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-red-200 transition-all hover:scale-105 active:scale-95"
+                >
+                  <span>Apply for Admission</span>
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition-colors"
+                >
+                  <span>Arrange a Campus Visit</span>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>

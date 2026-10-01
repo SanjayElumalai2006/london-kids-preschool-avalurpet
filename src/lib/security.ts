@@ -2,29 +2,35 @@
  * Security & Password Protection Utility
  * London Kids Preschool Avalurpet
  * 
- * Provides client & SSR compatible SHA-256 password hashing,
- * constant-time/safe verification, and credential sanitization.
+ * Provides industry-standard bcrypt password hashing, legacy SHA-256 verification
+ * and automatic migration, constant-time checks, and credential sanitization.
  */
 
-// Pure TypeScript 32-bit integer arithmetic helper for SHA-256
-function sha256Pure(ascii: string): string {
+import bcrypt from 'bcryptjs';
+
+const BCRYPT_SALT_ROUNDS = 10;
+const LEGACY_HASH_PREFIX = 'sha256:';
+
+/**
+ * Pure 32-bit integer arithmetic helper for SHA-256 (used ONLY to verify legacy accounts)
+ */
+function legacySha256(ascii: string): string {
   function rightRotate(value: number, amount: number): number {
     return (value >>> amount) | (value << (32 - amount));
   }
 
   const mathPow = Math.pow;
   const maxWord = mathPow(2, 32);
-  const lengthProperty = 'length';
   let i = 0;
   let j = 0;
   let result = '';
 
   const words: number[] = [];
-  const asciiBitLength = (ascii as any)[lengthProperty] * 8;
+  const asciiBitLength = (ascii as unknown as string[]).length * 8;
 
   let hash = [
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
   ];
 
   const k = [
@@ -35,26 +41,26 @@ function sha256Pure(ascii: string): string {
     0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
     0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
   ];
 
   const compositeBit = '\x80';
   let asciiPadded = ascii + compositeBit;
 
-  while (((asciiPadded as any)[lengthProperty] % 64) - 56) {
+  while (((asciiPadded.length % 64) - 56) !== 0) {
     asciiPadded += '\x00';
   }
 
-  for (i = 0; i < (asciiPadded as any)[lengthProperty]; i++) {
+  for (i = 0; i < asciiPadded.length; i++) {
     j = asciiPadded.charCodeAt(i);
     if (j >> 8) return ''; // ASCII only
     words[i >> 2] |= j << ((3 - (i % 4)) * 8);
   }
 
-  words[(words as any)[lengthProperty]] = (asciiBitLength / maxWord) | 0;
-  words[(words as any)[lengthProperty]] = asciiBitLength;
+  words[words.length] = (asciiBitLength / maxWord) | 0;
+  words[words.length] = asciiBitLength;
 
-  for (j = 0; j < (words as any)[lengthProperty]; ) {
+  for (j = 0; j < words.length; ) {
     const w = words.slice(j, (j += 16));
     const oldHash = hash.slice(0);
 
@@ -102,24 +108,31 @@ function sha256Pure(ascii: string): string {
   return result;
 }
 
-const HASH_PREFIX = 'sha256:';
-
 /**
- * Returns a secure SHA-256 hashed password string
+ * Returns an industry-standard bcrypt hashed password string.
  */
 export function hashPasswordSync(password: string): string {
   if (!password) return '';
   const trimmed = password.trim();
-  const hex = sha256Pure(trimmed);
-  return `${HASH_PREFIX}${hex}`;
+  return bcrypt.hashSync(trimmed, BCRYPT_SALT_ROUNDS);
+}
+
+/**
+ * Checks whether a stored credential is in a legacy format that needs automatic upgrade to bcrypt.
+ */
+export function needsRehash(storedCredential?: string): boolean {
+  if (!storedCredential) return false;
+  const trimmed = storedCredential.trim();
+  // If it doesn't start with standard bcrypt identifiers ($2a$, $2b$, or $2y$)
+  return !trimmed.startsWith('$2a$') && !trimmed.startsWith('$2b$') && !trimmed.startsWith('$2y$');
 }
 
 /**
  * Verifies a plaintext password against a stored credential.
  * Supports:
- * 1. Hashed passwords (sha256:...)
- * 2. Legacy/plain text passwords (with auto-trimming)
- * 3. Case-sensitive and whitespace-trimmed matching
+ * 1. Standard bcrypt hashes ($2b$..., $2a$...)
+ * 2. Legacy SHA-256 hashed passwords (sha256:...)
+ * 3. Legacy direct plaintext matching
  */
 export function verifyPassword(plainPassword: string, storedCredential?: string): boolean {
   if (!storedCredential || !plainPassword) return false;
@@ -127,13 +140,26 @@ export function verifyPassword(plainPassword: string, storedCredential?: string)
   const trimmedPlain = plainPassword.trim();
   const trimmedStored = storedCredential.trim();
 
-  // If already hashed
-  if (trimmedStored.startsWith(HASH_PREFIX)) {
-    const computedHash = hashPasswordSync(trimmedPlain);
-    return computedHash === trimmedStored;
+  // 1. Bcrypt hash check (Standard)
+  if (
+    trimmedStored.startsWith('$2a$') ||
+    trimmedStored.startsWith('$2b$') ||
+    trimmedStored.startsWith('$2y$')
+  ) {
+    try {
+      return bcrypt.compareSync(trimmedPlain, trimmedStored);
+    } catch {
+      return false;
+    }
   }
 
-  // Legacy direct plaintext comparison
+  // 2. Legacy SHA-256 check (Backward compatibility for existing stored/seeded passwords)
+  if (trimmedStored.startsWith(LEGACY_HASH_PREFIX)) {
+    const computedHex = `${LEGACY_HASH_PREFIX}${legacySha256(trimmedPlain)}`;
+    return computedHex === trimmedStored;
+  }
+
+  // 3. Legacy direct plaintext comparison
   if (trimmedStored === trimmedPlain) {
     return true;
   }
@@ -144,6 +170,6 @@ export function verifyPassword(plainPassword: string, storedCredential?: string)
 /**
  * Masks password string for secure display (returns bullet string)
  */
-export function maskPassword(_password?: string): string {
+export function maskPassword(): string {
   return '••••••••';
 }

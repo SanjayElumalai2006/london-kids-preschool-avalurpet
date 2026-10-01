@@ -1,44 +1,131 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+import connectToDatabase from '@/lib/mongodb';
+import { UserModel, AuditLogModel } from '@/models';
+import { hashPasswordSync, verifyPassword } from '@/lib/security';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+
+    // Rate limiting: 5 attempts per 15 minutes
+    const rateCheck = checkRateLimit(`email-verify:${clientIp}`, 5, 15 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many verification attempts. Please wait.' },
+        { status: 429 }
+      );
+    }
+
     const { email, token } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ success: false, error: 'Personal email is required' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'Registered personal email address is required.' },
+        { status: 400 }
+      );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
+    await connectToDatabase();
 
-    // If verifying an existing token
+    const user = await UserModel.findOne({
+      $or: [{ personalEmail: cleanEmail }, { email: cleanEmail }],
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'No user account found with this email address.' },
+        { status: 404 }
+      );
+    }
+
+    // 1. Verifying an existing token
     if (token) {
-      // In production, compare against stored token in database or Redis.
-      // In development test mode, tokens with valid format or matching dev tokens pass.
+      const cleanToken = String(token).trim();
+      const storedTokenHash = (user as any).emailVerificationTokenHash;
+      const tokenExpires = (user as any).emailVerificationExpires;
+
+      if (!storedTokenHash) {
+        // If already verified
+        if (user.emailVerified) {
+          return NextResponse.json({
+            success: true,
+            email: cleanEmail,
+            message: 'Email address is already verified. You can log in to the portal.',
+          });
+        }
+        return NextResponse.json(
+          { success: false, error: 'No active email verification request found.' },
+          { status: 400 }
+        );
+      }
+
+      if (tokenExpires && new Date() > new Date(tokenExpires)) {
+        return NextResponse.json(
+          { success: false, error: 'Verification token has expired. Please request a new verification email.' },
+          { status: 400 }
+        );
+      }
+
+      const isValid = verifyPassword(cleanToken, storedTokenHash);
+      if (!isValid) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid verification token.' },
+          { status: 400 }
+        );
+      }
+
+      user.emailVerified = true;
+      (user as any).emailVerificationTokenHash = undefined;
+      (user as any).emailVerificationExpires = undefined;
+      await user.save();
+
+      try {
+        await AuditLogModel.create({
+          id: `aud-${Date.now()}`,
+          action: 'EMAIL_VERIFIED',
+          targetUserId: user.id,
+          targetUserName: user.name,
+          targetUserRole: user.role,
+          performedBy: user.id,
+          performedByName: user.name,
+          details: `Parent email ${cleanEmail} verified successfully from ${clientIp}`,
+          timestamp: new Date().toISOString(),
+        });
+      } catch {}
+
       return NextResponse.json({
         success: true,
         email: cleanEmail,
-        verifiedAt: new Date().toISOString(),
-        message: 'Personal email verified successfully. Account is now enabled for portal login.'
+        message: 'Personal email verified successfully. Account is now active for portal login.',
       });
     }
 
-    // Generating and dispatching verification token
-    const verificationToken = `lk-verify-${Math.random().toString(36).substring(2, 10)}`;
+    // 2. Generating and dispatching verification token
+    const verificationToken = `lk-${crypto.randomBytes(16).toString('hex')}`;
+    const tokenHash = hashPasswordSync(verificationToken);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // If an SMTP / Resend / SendGrid key is configured, email is dispatched here:
-    // e.g. await sendEmail({ to: cleanEmail, subject: "Verify Parent Account", token: verificationToken });
+    (user as any).emailVerificationTokenHash = tokenHash;
+    (user as any).emailVerificationExpires = expiresAt;
+    await user.save();
 
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV MODE ONLY] Email verification token for ${cleanEmail}: ${verificationToken}`);
+    }
+
+    // Never return the token directly in the response in production
     return NextResponse.json({
       success: true,
       email: cleanEmail,
-      verificationToken,
-      expiresAt,
-      message: `Verification link generated for personal email ${cleanEmail}. In development mode, use token ${verificationToken} or verify directly.`
+      message: `A verification link has been dispatched to ${cleanEmail}. Please check your inbox.`,
     });
   } catch (err: any) {
+    console.error('Email verification error:', err);
     return NextResponse.json(
-      { success: false, error: err?.message || 'Internal server error during email verification' },
+      { success: false, error: 'Internal server error during email verification.' },
       { status: 500 }
     );
   }

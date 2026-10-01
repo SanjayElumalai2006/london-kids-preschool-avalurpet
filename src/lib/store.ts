@@ -69,7 +69,13 @@ export async function syncWithDatabase(): Promise<void> {
   isSyncing = true;
 
   try {
-    const res = await fetch('/api/db/sync');
+    const res = await fetch('/api/db/sync', {
+      credentials: 'include',
+    });
+    if (res.status === 401) {
+      // Unauthenticated visitor: public visitors do not receive internal DB collections
+      return;
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
 
@@ -77,11 +83,17 @@ export async function syncWithDatabase(): Promise<void> {
       const dbData = json.data;
       const current = getStore();
 
+      // Sanitize any incoming users to ensure password hashes and reset codes are stripped from client storage
+      const sanitizedUsers = (dbData.users && dbData.users.length > 0 ? dbData.users : current.users).map((u: any) => {
+        const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, resetPasswordExpires: _re, ...safeUser } = u;
+        return safeUser;
+      });
+
       // Merge MongoDB data with local storage
       const merged: AppStoreData = {
         ...current,
         settings: dbData.settings || current.settings,
-        users: dbData.users && dbData.users.length > 0 ? dbData.users : current.users,
+        users: sanitizedUsers,
         students: dbData.students || current.students,
         attendance: dbData.attendance || current.attendance,
         reviews: dbData.reviews || current.reviews,
@@ -98,8 +110,8 @@ export async function syncWithDatabase(): Promise<void> {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
       window.dispatchEvent(new Event('preschool_store_updated'));
     }
-  } catch (err) {
-    console.warn('Background database sync deferred (offline or starting up):', err);
+  } catch {
+    // Background sync deferred (offline or starting up)
   } finally {
     isSyncing = false;
     hasInitialSynced = true;
@@ -343,14 +355,14 @@ export function saveStore(data: Partial<AppStoreData>) {
     const current = getStore();
     const updated = { ...current, ...data };
     
-    // Guarantee no raw password is ever serialized
+    // Guarantee no raw passwords, reset codes, or sensitive tokens are ever stored in client localStorage
     if (updated.currentUser) {
-      const { password: _p, ...cleanCurrentUser } = updated.currentUser as any;
+      const { password: _p, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanCurrentUser } = updated.currentUser as any;
       updated.currentUser = cleanCurrentUser;
     }
     if (updated.users && Array.isArray(updated.users)) {
       updated.users = updated.users.map((u: any) => {
-        const { password: _p, ...cleanUser } = u;
+        const { password: _p, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanUser } = u;
         return cleanUser;
       });
     }
@@ -372,6 +384,7 @@ export function saveStore(data: Partial<AppStoreData>) {
       try {
         await fetch('/api/db/sync', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });

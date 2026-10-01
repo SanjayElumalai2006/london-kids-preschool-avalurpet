@@ -67,7 +67,7 @@ export default function LoginPage() {
   };
 
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -81,78 +81,36 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      const store = getStore();
-      const input = inputEmail.toLowerCase();
-      const inputDigits = input.replace(/\D/g, '');
-
-      // Allow sign in with personal email, employee ID, or registered phone
-      const matchedUser = store.users.find(u => {
-        const uPersonal = (u.personalEmail || '').trim().toLowerCase();
-        const uEmail = (u.email || '').trim().toLowerCase();
-        const uEmpId = (u.employeeId || '').trim().toLowerCase();
-        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
-
-        return (
-          (uPersonal && uPersonal === input) ||
-          (uEmail && uEmail === input) ||
-          (uEmpId && uEmpId === input) ||
-          (inputDigits.length >= 10 && uPhoneDigits.endsWith(inputDigits.slice(-10)))
-        );
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: inputEmail, password: inputPwd }),
       });
 
-      if (!matchedUser) {
-        setError('Incorrect login ID. Please enter your registered personal email address or mobile number.');
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Login failed. Please check your credentials.');
         setLoading(false);
         return;
       }
 
-      if (matchedUser.status === 'REMOVED') {
-        setError('This account has been removed. Please contact the school administrator for assistance.');
-        setLoading(false);
-        return;
-      }
-
-      if (matchedUser.status === 'INACTIVE') {
-        setError('This account is currently inactive. Please contact the school administrator to reactivate your access.');
-        setLoading(false);
-        return;
-      }
-
-      // Check passwords securely using verifyPassword
-      const storedCredential = matchedUser.passwordHash || (matchedUser as any).password;
-      const matchStored = Boolean(storedCredential && verifyPassword(inputPwd, storedCredential));
-      
-      const matchOwner = Boolean(
-        (matchedUser.personalEmail?.toLowerCase() === 'londonkids276@gmail.com' || matchedUser.role === 'OWNER') &&
-        (inputPwd === '90436 33545' || (storedCredential && verifyPassword(inputPwd, storedCredential)))
-      );
-
-      if (!matchStored && !matchOwner) {
-        setError('Incorrect password. Please enter your valid password or use "Forgot Password" to reset it.');
-        setLoading(false);
-        return;
-      }
-
-      // Check email verification status
-      if (matchedUser.emailVerified === false) {
-        setError('Your account email has not been verified yet. Please contact the school administrator to verify your access.');
-        setLoading(false);
-        return;
-      }
+      const activeUser: User = data.user;
 
       // If user is required to change password on first login
-      if (matchedUser.mustChangePassword) {
-        setPasswordChangeUser(matchedUser);
+      if (activeUser.mustChangePassword) {
+        setPasswordChangeUser(activeUser);
         setLoading(false);
         return;
       }
 
-      // Ensure no raw password is ever saved to store
-      const { password: _rawPwd, ...safeUser } = matchedUser as any;
-      saveStore({ currentUser: safeUser });
-      redirectByRole(safeUser.role);
-    }, 350);
+      saveStore({ currentUser: activeUser });
+      redirectByRole(activeUser.role);
+    } catch (err: any) {
+      setError('Network or server connection error. Please try again.');
+      setLoading(false);
+    }
   };
 
   // ── FORGOT PASSWORD FLOW ───────────────────────────────────────────────
@@ -167,7 +125,7 @@ export default function LoginPage() {
     setForgotModalOpen(true);
   };
 
-  const handleSendResetEmail = (e: React.FormEvent) => {
+  const handleSendResetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
 
@@ -177,45 +135,29 @@ export default function LoginPage() {
       return;
     }
 
-    const store = getStore();
-    const user = store.users.find(u => 
-      (u.personalEmail && u.personalEmail.trim().toLowerCase() === targetEmail) ||
-      (u.email && u.email.trim().toLowerCase() === targetEmail)
-    );
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail }),
+      });
 
-    if (!user) {
-      setForgotError(`No registered account found with email "${forgotEmail}". Please check your email or contact the school office (+91 90436 33545).`);
-      return;
-    }
+      const data = await res.json();
 
-    if (user.status === 'REMOVED') {
-      setForgotError('This account has been removed. Please contact the administrator.');
-      return;
-    }
-
-    // Generate 6-digit verification security code
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins expiry
-
-    // Save reset code on user in store
-    const updatedUsers = store.users.map(u => {
-      if (u.id === user.id) {
-        return {
-          ...u,
-          verificationToken: code,
-          verificationExpiresAt: expiresAt
-        };
+      if (!res.ok || !data.success) {
+        setForgotError(data.error || 'Failed to dispatch reset email.');
+        setLoading(false);
+        return;
       }
-      return u;
-    });
 
-    saveStore({ users: updatedUsers });
-
-    setGeneratedCode(code);
-    setCodeSentAt(new Date().toLocaleTimeString());
-    setTargetUserName(user.name);
-    setEnteredCode(code); // Pre-fill convenience
-    setForgotStep('EMAIL_PREVIEW');
+      setCodeSentAt(new Date().toLocaleTimeString());
+      setForgotStep('RESET_FORM');
+    } catch {
+      setForgotError('Unable to connect to school server. Please verify your network.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleProceedToResetForm = () => {
@@ -223,7 +165,7 @@ export default function LoginPage() {
     setResetError('');
   };
 
-  const handleResetPasswordSubmit = (e: React.FormEvent) => {
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetError('');
 
@@ -242,43 +184,34 @@ export default function LoginPage() {
       return;
     }
 
-    const store = getStore();
     const targetEmail = forgotEmail.trim().toLowerCase();
-    const user = store.users.find(u => 
-      (u.personalEmail && u.personalEmail.trim().toLowerCase() === targetEmail) ||
-      (u.email && u.email.trim().toLowerCase() === targetEmail)
-    );
 
-    if (!user) {
-      setResetError('Account could not be verified. Please restart password recovery.');
-      return;
-    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          resetCode: enteredCode.trim(),
+          newPassword: resetNewPassword.trim(),
+        }),
+      });
 
-    // Verify code
-    if (user.verificationToken && user.verificationToken !== enteredCode.trim()) {
-      setResetError('Invalid verification code. Please check the code sent to your registered email.');
-      return;
-    }
+      const data = await res.json();
 
-    // Hash new password and save
-    const newHash = hashPasswordSync(resetNewPassword);
-    const updatedUsers = store.users.map(u => {
-      if (u.id === user.id) {
-        const { password: _p, ...cleanUser } = u as any;
-        return {
-          ...cleanUser,
-          passwordHash: newHash,
-          mustChangePassword: false,
-          verificationToken: undefined,
-          verificationExpiresAt: undefined,
-          updatedAt: new Date().toISOString()
-        };
+      if (!res.ok || !data.success) {
+        setResetError(data.error || 'Failed to update password. Please check the code.');
+        setLoading(false);
+        return;
       }
-      return u;
-    });
 
-    saveStore({ users: updatedUsers });
-    setForgotStep('SUCCESS');
+      setForgotStep('SUCCESS');
+    } catch {
+      setResetError('Failed to contact server to update password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFinishReset = () => {
@@ -535,62 +468,13 @@ export default function LoginPage() {
               </form>
             )}
 
-            {/* STEP 2: EMAIL PREVIEW / SIMULATION */}
-            {forgotStep === 'EMAIL_PREVIEW' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                  <CheckCircle2 size={16} />
-                  <span>Password Reset Email Dispatched!</span>
-                </div>
-
-                {/* Simulated Email Box */}
-                <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2 text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1 font-bold">
-                      <Mail size={13} className="text-orange-600" />
-                      <span>Simulated Inbox Dispatch</span>
-                    </span>
-                    <span>{codeSentAt}</span>
-                  </div>
-
-                  <div className="text-xs space-y-1">
-                    <p className="text-slate-500">
-                      <strong>To:</strong> {forgotEmail}
-                    </p>
-                    <p className="text-slate-500">
-                      <strong>Subject:</strong> 🔐 Password Reset Code — London Kids Preschool
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-2 text-center">
-                    <p className="text-xs text-slate-600">
-                      Hello <strong>{targetUserName || 'User'}</strong>, your 6-digit password verification code is:
-                    </p>
-                    <div className="text-2xl font-black text-orange-600 tracking-widest py-1 bg-amber-50 rounded-lg border border-dashed border-amber-300">
-                      {generatedCode}
-                    </div>
-                    <p className="text-[10px] text-slate-400">
-                      Valid for 15 minutes. Use this code on the next screen to update your password.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={handleProceedToResetForm}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-extrabold text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>Proceed to Update Password</span>
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: RESET PASSWORD FORM */}
+            {/* STEP 2: RESET PASSWORD FORM */}
             {forgotStep === 'RESET_FORM' && (
               <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3.5 py-2.5 rounded-xl border border-emerald-200">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span>A 6-digit verification code has been dispatched to your email. Enter it below with your new password.</span>
+                </div>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg">
                     🔐

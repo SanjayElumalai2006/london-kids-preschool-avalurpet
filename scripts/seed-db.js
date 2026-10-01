@@ -48,9 +48,10 @@ function loadEnv() {
 loadEnv();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/pre-school';
+const bcrypt = require('bcryptjs');
 
 function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+  return bcrypt.hashSync(password, 10);
 }
 
 // 1. School Settings
@@ -91,7 +92,7 @@ const INITIAL_USERS = [
     status: 'ACTIVE',
     createdAt: '2026-09-19',
     updatedAt: '2026-09-19',
-    passwordHash: hashPassword('90436 33545'),
+    passwordHash: hashPassword('Director@2026!'),
     emailVerified: true,
     mustChangePassword: false,
   },

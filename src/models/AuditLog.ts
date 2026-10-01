@@ -7,6 +7,7 @@ export interface IAuditLogDocument extends Document {
   targetUserId: string;
   targetUserName: string;
   targetUserRole: UserRole;
+  targetType?: string;
   performedBy: string;
   performedByName: string;
   timestamp: string;
@@ -18,7 +19,10 @@ const AuditLogSchema = new Schema<IAuditLogDocument>(
     id: { type: String, required: true, unique: true, index: true },
     action: {
       type: String,
-      enum: ['CREATE', 'UPDATE', 'STATUS_CHANGE', 'PASSWORD_RESET', 'ROLE_CHANGE', 'REMOVE', 'RESTORE'],
+      enum: [
+        'CREATE', 'UPDATE', 'STATUS_CHANGE', 'PASSWORD_RESET', 'ROLE_CHANGE', 'REMOVE', 'RESTORE',
+        'USER_LOGIN', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_RESET_COMPLETED', 'ENQUIRY_SUBMITTED', 'EMAIL_VERIFIED'
+      ],
       required: true,
     },
     targetUserId: { type: String, required: true },
@@ -28,6 +32,7 @@ const AuditLogSchema = new Schema<IAuditLogDocument>(
       enum: ['OWNER', 'PRINCIPAL', 'ADMIN', 'TEACHER', 'STAFF', 'PARENT', 'STUDENT'],
       required: true,
     },
+    targetType: { type: String },
     performedBy: { type: String, required: true },
     performedByName: { type: String, required: true },
     timestamp: { type: String, required: true },
