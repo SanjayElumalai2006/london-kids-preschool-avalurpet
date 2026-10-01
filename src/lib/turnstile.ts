@@ -30,7 +30,9 @@ export async function verifyTurnstileToken(
   }
 
   const secretKey =
-    process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY || DEFAULT_TEST_SECRET_KEY;
+    process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
+    process.env.TURNSTILE_SECRET_KEY ||
+    DEFAULT_TEST_SECRET_KEY;
 
   try {
     const formData = new URLSearchParams();

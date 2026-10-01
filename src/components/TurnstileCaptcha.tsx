@@ -25,7 +25,9 @@ export default function TurnstileCaptcha({
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const siteKey =
-    process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || DEFAULT_TEST_SITE_KEY;
+    process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+    DEFAULT_TEST_SITE_KEY;
 
   // Load Cloudflare Turnstile script
   useEffect(() => {
