@@ -22,6 +22,8 @@ export interface User {
   address?: string;
   dateOfJoining?: string;
   employeeId?: string; // For Owner, Admin, Teacher, Staff
+  staffId?: string; // Staff Admission / Employee ID
+  admissionId?: string; // Student Admission Number / ID
   assignedClass?: SchoolLevel;
   assignedSection?: string;
   studentId?: string; // Backward compatibility for single linked child

@@ -18,9 +18,25 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Strict session and role authorization check
-  const verifySession = useCallback(() => {
+  const verifySession = useCallback(async () => {
     const store = getStore();
-    const user = store.currentUser;
+    let user = store.currentUser;
+
+    // If currentUser is not in client localStorage, verify if an active HTTP-only session cookie exists on server
+    if (!user) {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success && data.user) {
+            user = data.user;
+            saveStore({ currentUser: user });
+          }
+        }
+      } catch (err) {
+        console.warn('Portal session check notice:', err);
+      }
+    }
 
     if (!user) {
       setIsAuthorized(false);

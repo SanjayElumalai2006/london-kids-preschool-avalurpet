@@ -43,39 +43,61 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwdChangeError, setPwdChangeError] = useState('');
 
-  // Clear email and password fields when login page first opens
+  // Active session detection
+  const [existingUser, setExistingUser] = useState<User | null>(null);
+
+  // Separate login tabs for Student/Parent vs Staff/Management
+  const [loginTab, setLoginTab] = useState<'STUDENT' | 'STAFF'>('STUDENT');
+
+  // Check if user is already signed in on client mount
   useEffect(() => {
-    setEmail('');
-    setPassword('');
-    setError('');
+    const store = getStore();
+    if (store.currentUser) {
+      setExistingUser(store.currentUser);
+    } else {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(data => {
+          if (data?.success && data?.user) {
+            setExistingUser(data.user);
+            saveStore({ currentUser: data.user });
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const redirectByRole = (role: UserRole) => {
+    let target = '/portal/parent';
     if (role === 'PARENT' || role === 'STUDENT') {
-      router.push('/portal/parent');
+      target = '/portal/parent';
     } else if (role === 'STAFF') {
-      router.push('/portal/staff');
+      target = '/portal/staff';
     } else if (role === 'TEACHER') {
-      router.push('/portal/teacher');
+      target = '/portal/teacher';
     } else if (role === 'ADMIN') {
-      router.push('/portal/admin');
+      target = '/portal/admin';
     } else if (role === 'PRINCIPAL') {
-      router.push('/portal/principal');
+      target = '/portal/principal';
     } else if (role === 'OWNER') {
-      router.push('/portal/owner');
+      target = '/portal/owner';
     }
+    // window.location.href ensures a clean navigation with fresh server-session cookies
+    window.location.href = target;
   };
 
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitLogin = async (identifierVal: string, passwordVal: string) => {
     setError('');
 
-    const inputEmail = email.trim();
-    const inputPwd = password.trim();
+    const inputIdentifier = identifierVal.trim();
+    const inputPwd = passwordVal.trim();
 
-    if (!inputEmail || !inputPwd) {
-      setError('Please enter your personal email address and password.');
+    if (!inputIdentifier || !inputPwd) {
+      setError(
+        loginTab === 'STUDENT'
+          ? "Please enter your child's Student Admission ID and password."
+          : 'Please enter your Staff ID / Employee ID and password.'
+      );
       return;
     }
 
@@ -85,7 +107,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: inputEmail, password: inputPwd }),
+        body: JSON.stringify({ identifier: inputIdentifier, password: inputPwd }),
       });
 
       const data = await res.json();
@@ -111,6 +133,11 @@ export default function LoginPage() {
       setError('Network or server connection error. Please try again.');
       setLoading(false);
     }
+  };
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitLogin(email, password);
   };
 
   // ── FORGOT PASSWORD FLOW ───────────────────────────────────────────────
@@ -304,6 +331,65 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Active Session Notification */}
+          {existingUser && (
+            <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center justify-between gap-3 text-xs">
+              <div className="overflow-hidden">
+                <p className="font-extrabold text-amber-900 truncate">
+                  Active Session: {existingUser.name}
+                </p>
+                <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded mt-0.5 uppercase">
+                  {existingUser.role} Portal
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => redirectByRole(existingUser.role)}
+                className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-xs shrink-0 shadow-xs cursor-pointer transition-colors"
+              >
+                Go to Portal →
+              </button>
+            </div>
+          )}
+
+          {/* Separate Login Tabs for Student/Parent vs Staff/Management */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-5 border border-slate-200">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginTab('STUDENT');
+                setError('');
+                setEmail('');
+                setPassword('');
+              }}
+              className={`flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                loginTab === 'STUDENT'
+                  ? 'bg-white text-orange-700 shadow-sm border border-orange-200 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="text-base">🎒</span>
+              <span>Student / Parent</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLoginTab('STAFF');
+                setError('');
+                setEmail('');
+                setPassword('');
+              }}
+              className={`flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                loginTab === 'STAFF'
+                  ? 'bg-white text-orange-700 shadow-sm border border-orange-200 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="text-base">🏫</span>
+              <span>Staff &amp; Faculty</span>
+            </button>
+          </div>
+
           {/* Form */}
           <form onSubmit={handleLoginSubmit} autoComplete="off" className="space-y-4">
             {error && (
@@ -316,10 +402,10 @@ export default function LoginPage() {
             <div>
               <div className="flex justify-between items-baseline mb-1.5">
                 <label htmlFor="login-email" className="block text-sm font-semibold text-gray-900">
-                  Login ID
+                  {loginTab === 'STUDENT' ? 'Student Admission ID' : 'Staff ID / Employee ID'}
                 </label>
                 <span className="text-xs font-medium text-gray-500">
-                  Email / Mobile / Employee ID
+                  {loginTab === 'STUDENT' ? 'Admission No / Mobile' : 'Staff ID / Email'}
                 </span>
               </div>
               <input
@@ -329,9 +415,18 @@ export default function LoginPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter Registered Email, Mobile, or Employee ID"
+                placeholder={
+                  loginTab === 'STUDENT'
+                    ? 'Enter Student Admission ID (e.g. LK-2026-001) or Mobile'
+                    : 'Enter Staff ID (e.g. EMP-LK-STF01, EMP-LK-T01) or Email'
+                }
                 className="w-full px-4 py-3 rounded-xl bg-white border-2 border-gray-300 text-gray-900 placeholder-gray-400 text-base font-medium transition-all focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 shadow-xs"
               />
+              <p className="text-[11px] text-slate-400 mt-1">
+                {loginTab === 'STUDENT'
+                  ? "Enter your child's preschool Admission ID (e.g. LK-2026-001) or registered mobile number."
+                  : 'Enter your assigned Staff ID / Employee ID (e.g. EMP-LK-STF01) or registered email.'}
+              </p>
             </div>
 
             <div>
@@ -352,7 +447,7 @@ export default function LoginPage() {
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -383,7 +478,11 @@ export default function LoginPage() {
                   </span>
                 ) : (
                   <>
-                    <span>Sign In To Portal</span>
+                    <span>
+                      {loginTab === 'STUDENT'
+                        ? 'Sign In to Student Portal'
+                        : 'Sign In to Staff Portal'}
+                    </span>
                     <ArrowRight size={18} />
                   </>
                 )}

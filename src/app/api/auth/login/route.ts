@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
-import { UserModel, AuditLogModel } from '@/models';
+import { UserModel, StudentModel, AuditLogModel } from '@/models';
 import { verifyPassword, hashPasswordSync, needsRehash } from '@/lib/security';
 import { createSessionToken, getSessionCookieHeader } from '@/lib/session';
 import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rateLimit';
-import { DEMO_USERS } from '@/lib/initialData';
+import { DEMO_USERS, DEMO_STUDENTS } from '@/lib/initialData';
 
 export async function POST(request: Request) {
   try {
@@ -24,12 +24,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const rawIdentifier = body.identifier || body.email || body.phone;
+    const rawIdentifier = body.identifier || body.emailOrPhone || body.email || body.phone || body.admissionId || body.staffId;
     const password = body.password;
 
     if (!rawIdentifier || !password) {
       return NextResponse.json(
-        { success: false, error: 'Please enter your registered email/phone and password.' },
+        { success: false, error: 'Please enter your registered ID/email/phone and password.' },
         { status: 400 }
       );
     }
@@ -40,14 +40,57 @@ export async function POST(request: Request) {
 
     await connectToDatabase();
 
-    // 2. Locate User in MongoDB
+    // Escape regex special characters for safe case-insensitive matching
+    const safeEscaped = cleanInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const caseInsensitiveRegex = new RegExp(`^${safeEscaped}$`, 'i');
+
+    // 2. Locate User in MongoDB:
+    // Check personalEmail, email, employeeId, staffId, admissionId, or user id
     let user = await UserModel.findOne({
       $or: [
-        { personalEmail: cleanInput },
-        { email: cleanInput },
-        { employeeId: cleanInput },
+        { personalEmail: caseInsensitiveRegex },
+        { email: caseInsensitiveRegex },
+        { employeeId: caseInsensitiveRegex },
+        { staffId: caseInsensitiveRegex },
+        { admissionId: caseInsensitiveRegex },
+        { id: caseInsensitiveRegex },
       ],
     }).lean();
+
+    // If not matched directly on User, check if the identifier is a Student Admission Number or Student ID
+    if (!user) {
+      const student = await StudentModel.findOne({
+        $or: [
+          { admissionNo: caseInsensitiveRegex },
+          { id: caseInsensitiveRegex },
+        ],
+      }).lean();
+
+      if (student) {
+        // Resolve linked parent/student user
+        const parentSearch: any[] = [];
+        if (student.parentId) parentSearch.push({ id: student.parentId });
+        if (student.id) {
+          parentSearch.push({ studentIds: student.id });
+          parentSearch.push({ studentId: student.id });
+        }
+        if (student.parentEmail) {
+          const safeEmail = student.parentEmail.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          parentSearch.push({ personalEmail: new RegExp(`^${safeEmail}$`, 'i') });
+          parentSearch.push({ email: new RegExp(`^${safeEmail}$`, 'i') });
+        }
+        if (student.parentPhone) {
+          const parentDigits = student.parentPhone.replace(/\D/g, '');
+          if (parentDigits.length >= 10) {
+            parentSearch.push({ phone: new RegExp(parentDigits.slice(-10)) });
+          }
+        }
+
+        if (parentSearch.length > 0) {
+          user = await UserModel.findOne({ $or: parentSearch }).lean();
+        }
+      }
+    }
 
     // Support phone number search if 10+ digits provided
     if (!user && inputDigits.length >= 10) {
@@ -58,19 +101,34 @@ export async function POST(request: Request) {
       }) as any;
     }
 
-    // Fallback to DEMO_USERS if DB collection is completely empty
+    // Fallback to DEMO_USERS and DEMO_STUDENTS if DB collection is completely empty
     if (!user) {
       const count = await UserModel.countDocuments();
       if (count === 0) {
+        const demoStudent = DEMO_STUDENTS.find((s: any) =>
+          (s.admissionNo && s.admissionNo.toLowerCase() === cleanInput) ||
+          (s.id && s.id.toLowerCase() === cleanInput)
+        );
+
         user = DEMO_USERS.find((u: any) => {
           const uPersonal = (u.personalEmail || '').toLowerCase();
           const uEmail = (u.email || '').toLowerCase();
           const uEmpId = (u.employeeId || '').toLowerCase();
+          const uStaffId = ((u as any).staffId || '').toLowerCase();
+          const uAdmId = ((u as any).admissionId || '').toLowerCase();
           const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+          const matchesStudent = demoStudent && (
+            u.id === demoStudent.parentId ||
+            (u.studentIds && u.studentIds.includes(demoStudent.id)) ||
+            (u.personalEmail && demoStudent.parentEmail && u.personalEmail.toLowerCase() === demoStudent.parentEmail.toLowerCase())
+          );
           return (
             uPersonal === cleanInput ||
             uEmail === cleanInput ||
             uEmpId === cleanInput ||
+            uStaffId === cleanInput ||
+            uAdmId === cleanInput ||
+            matchesStudent ||
             (inputDigits.length >= 10 && uPhoneDigits.endsWith(inputDigits.slice(-10)))
           );
         }) as any;
@@ -84,7 +142,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Incorrect login ID. Please enter your registered personal email address or mobile number.' },
+        { success: false, error: 'Incorrect login ID. Please enter your valid Staff ID, Student Admission No, or registered Email/Mobile.' },
         { status: 401 }
       );
     }

@@ -13,6 +13,8 @@ export interface IUserDocument extends Document {
   address?: string;
   dateOfJoining?: string;
   employeeId?: string;
+  staffId?: string;
+  admissionId?: string;
   assignedClass?: SchoolLevel;
   assignedSection?: string;
   studentId?: string;
@@ -47,7 +49,9 @@ const UserSchema = new Schema<IUserDocument>(
     avatar: { type: String },
     address: { type: String },
     dateOfJoining: { type: String },
-    employeeId: { type: String },
+    employeeId: { type: String, index: true },
+    staffId: { type: String, index: true },
+    admissionId: { type: String, index: true },
     assignedClass: { type: String, enum: ['PLAY_SCHOOL', 'NURSERY', 'LKG', 'UKG'] },
     assignedSection: { type: String },
     studentId: { type: String },
