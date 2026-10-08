@@ -49,6 +49,7 @@ export type AuditAction =
   | 'REMOVE' 
   | 'RESTORE'
   | 'USER_LOGIN'
+  | 'USER_LOGOUT'
   | 'PASSWORD_RESET_REQUESTED'
   | 'PASSWORD_RESET_COMPLETED'
   | 'ENQUIRY_SUBMITTED'

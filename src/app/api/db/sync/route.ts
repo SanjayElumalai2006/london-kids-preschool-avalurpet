@@ -28,7 +28,7 @@ import {
   INITIAL_GALLERY_PHOTOS,
 } from '@/lib/initialData';
 import { getSessionUser } from '@/lib/session';
-import { hashPasswordSync } from '@/lib/security';
+import { hashPasswordSync, isAllowedOrigin } from '@/lib/security';
 
 // Helper to strip internal Mongoose keys and sensitive credentials
 function cleanDoc(doc: any) {
@@ -42,24 +42,45 @@ function cleanDocs(docs: any[]) {
   return docs.map(cleanDoc);
 }
 
-// Helper to bulk upsert by 'id'
+// Deep sanitize object against Mongo operator injection ($) and path injection (.)
+function sanitizeForMongo(obj: any): any {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key.startsWith('$') || key.includes('.')) continue;
+    if (key === '_id' || key === '__v') continue;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      clean[key] = sanitizeForMongo(value);
+    } else {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
+// Helper to bulk upsert by strict string 'id'
 async function upsertMany(model: any, items: any[]) {
   if (!Array.isArray(items) || items.length === 0) return;
-  const validItems = items.filter((item) => item && typeof item === 'object' && item.id);
+  const validItems = items.filter(
+    (item) => item && typeof item === 'object' && typeof item.id === 'string' && item.id.trim().length > 0
+  );
   if (validItems.length === 0) return;
 
   const ops = validItems.map((item) => {
-    const { _id, __v, ...cleanItem } = item;
+    const cleanItem = sanitizeForMongo(item);
+    const targetId = String(cleanItem.id).trim();
     return {
       updateOne: {
-        filter: { id: cleanItem.id },
+        filter: { id: targetId },
         update: { $set: cleanItem },
         upsert: true,
       },
     };
   });
 
-  await model.bulkWrite(ops);
+  if (ops.length > 0) {
+    await model.bulkWrite(ops);
+  }
 }
 
 export async function GET(request: Request) {
@@ -229,7 +250,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to retrieve database records.',
+        error: process.env.NODE_ENV === 'production' ? 'Failed to retrieve database records.' : (error?.message || 'Failed to retrieve database records.'),
       },
       { status: 500 }
     );
@@ -238,7 +259,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    // 1. Enforce Server-Side Authorization: Session Required
+    // 1. Cross-origin protection
+    if (!isAllowedOrigin(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Cross-origin request rejected' },
+        { status: 403 }
+      );
+    }
+
+    // 2. Enforce Server-Side Authorization: Session Required
     const session = getSessionUser(request);
     if (!session) {
       return NextResponse.json(
@@ -251,12 +280,12 @@ export async function POST(request: Request) {
     }
 
     await connectToDatabase();
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const userRole = session.role;
     const parentLinkedIds = session.studentIds || [];
     const tasks: Promise<any>[] = [];
 
-    // 2. Role-based mutation boundaries
+    // 3. Role-based mutation boundaries
     if (userRole === 'PARENT' || userRole === 'STUDENT') {
       // Parents can only update their own linked children's photo or profile details
       if (body.students && Array.isArray(body.students)) {
@@ -283,7 +312,7 @@ export async function POST(request: Request) {
     } else if (['ADMIN', 'PRINCIPAL', 'OWNER'].includes(userRole)) {
       // Administrative roles
       if (body.settings && typeof body.settings === 'object') {
-        const { _id, __v, ...cleanSettings } = body.settings;
+        const cleanSettings = sanitizeForMongo(body.settings);
         tasks.push(
           SchoolSettingsModel.findOneAndUpdate(
             { key: 'main_settings' },
@@ -295,7 +324,7 @@ export async function POST(request: Request) {
 
       // Safe Users upsert with password hashing and privilege escalation protection
       if (body.users && Array.isArray(body.users)) {
-        const sanitizedUsers = body.users.map((u: any) => {
+        let sanitizedUsers = body.users.map((u: any) => {
           const userCopy = { ...u };
           // If a new raw password was supplied during user creation/reset
           if (userCopy.password && !userCopy.passwordHash) {
@@ -308,6 +337,14 @@ export async function POST(request: Request) {
           }
           return userCopy;
         });
+
+        // Prevent non-OWNER from modifying or overwriting existing OWNER accounts
+        if (userRole !== 'OWNER') {
+          sanitizedUsers = sanitizedUsers.filter(
+            (u: any) => u.id !== 'usr-owner' && u.role !== 'OWNER'
+          );
+        }
+
         tasks.push(upsertMany(UserModel, sanitizedUsers));
       }
 
@@ -334,7 +371,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to synchronize records with database.',
+        error: process.env.NODE_ENV === 'production' ? 'Failed to synchronize records with database.' : (error?.message || 'Failed to synchronize records with database.'),
       },
       { status: 500 }
     );

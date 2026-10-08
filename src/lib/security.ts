@@ -1,14 +1,14 @@
 /**
- * Security & Password Protection Utility
+ * Security, Origin Validation & Password Protection Utility
  * London Kids Preschool Avalurpet
  * 
  * Provides industry-standard bcrypt password hashing, legacy SHA-256 verification
- * and automatic migration, constant-time checks, and credential sanitization.
+ * and automatic migration, constant-time checks, CSRF origin verification, and input sanitization.
  */
 
 import bcrypt from 'bcryptjs';
 
-const BCRYPT_SALT_ROUNDS = 10;
+const BCRYPT_SALT_ROUNDS = 12;
 const LEGACY_HASH_PREFIX = 'sha256:';
 
 /**
@@ -172,4 +172,93 @@ export function verifyPassword(plainPassword: string, storedCredential?: string)
  */
 export function maskPassword(): string {
   return '••••••••';
+}
+
+/**
+ * CSRF / Origin Allowlist Verification for state-changing endpoints
+ */
+export function isAllowedOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host') || '';
+
+  // Non-browser or direct curl/internal requests without origin
+  if (!origin) {
+    const referer = request.headers.get('referer');
+    if (!referer) return true;
+    try {
+      const refererUrl = new URL(referer);
+      return isOriginAllowed(refererUrl.origin, host);
+    } catch {
+      return false;
+    }
+  }
+
+  return isOriginAllowed(origin, host);
+}
+
+function isOriginAllowed(origin: string, host: string): boolean {
+  try {
+    const originUrl = new URL(origin);
+    const originHost = originUrl.host.toLowerCase();
+
+    // 1. Same-Origin match with request Host header
+    if (host && originHost === host.toLowerCase()) {
+      return true;
+    }
+
+    // 2. Official Production Domain
+    if (
+      originHost === 'london-kids-preschool-avalurpet.vercel.app' ||
+      originHost.endsWith('.london-kids-preschool-avalurpet.vercel.app')
+    ) {
+      return true;
+    }
+
+    // 3. Vercel Preview Deployments for the same project
+    if (originHost.endsWith('.vercel.app')) {
+      return true;
+    }
+
+    // 4. Local Development Origins
+    if (
+      process.env.NODE_ENV !== 'production' ||
+      originHost === 'localhost:3000' ||
+      originHost === '127.0.0.1:3000' ||
+      originHost.startsWith('localhost:') ||
+      originHost.startsWith('127.0.0.1:')
+    ) {
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sanitizes generic user input text
+ */
+export function sanitizeText(input: unknown, maxLength: number = 200): string {
+  if (typeof input !== 'string') return '';
+  return input
+    .replace(/[<>]/g, '') // remove literal angle brackets
+    .trim()
+    .slice(0, maxLength);
+}
+
+/**
+ * Sanitizes and validates email addresses
+ */
+export function sanitizeEmail(email: unknown): string {
+  if (typeof email !== 'string') return '';
+  return email.trim().toLowerCase().slice(0, 120);
+}
+
+/**
+ * Sanitizes phone numbers
+ */
+export function sanitizePhone(phone: unknown): string {
+  if (typeof phone !== 'string') return '';
+  return phone.replace(/[^\d+()-\s]/g, '').trim().slice(0, 20);
 }

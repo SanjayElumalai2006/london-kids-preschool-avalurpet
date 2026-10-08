@@ -209,9 +209,9 @@ export function getStore(): AppStoreData {
           (u.personalEmail && du.personalEmail && u.personalEmail.trim().toLowerCase() === du.personalEmail.trim().toLowerCase())
         );
         if (existingIdx === -1) {
-          parsed.users.push(du);
+          const { password: _p, passwordHash: _ph, ...safeDu } = du as any;
+          parsed.users.push(safeDu);
         } else {
-          if (!parsed.users[existingIdx].passwordHash) parsed.users[existingIdx].passwordHash = du.passwordHash;
           if (!parsed.users[existingIdx].status) parsed.users[existingIdx].status = 'ACTIVE';
           if (!parsed.users[existingIdx].createdAt && du.createdAt) parsed.users[existingIdx].createdAt = du.createdAt;
           if (!parsed.users[existingIdx].personalEmail) parsed.users[existingIdx].personalEmail = du.personalEmail;
@@ -225,22 +225,14 @@ export function getStore(): AppStoreData {
         }
       }
 
-      // Sanitize all users: eliminate raw password, guarantee passwordHash, emailVerified, studentIds
+      // Sanitize all users: eliminate raw password, passwordHash, and reset tokens
       parsed.users = parsed.users.map((u: any) => {
-        const { password: _p, ...cleaned } = u;
-        let passwordHash = cleaned.passwordHash;
-        if (!passwordHash && _p) {
-          passwordHash = hashPasswordSync(_p);
-        }
-        if (!passwordHash) {
-          passwordHash = hashPasswordSync('LK2026!');
-        }
+        const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleaned } = u;
         const studentIds: string[] = Array.isArray(cleaned.studentIds)
           ? cleaned.studentIds
           : (cleaned.studentId ? [cleaned.studentId] : []);
         return {
           ...cleaned,
-          passwordHash,
           emailVerified: cleaned.emailVerified !== undefined ? cleaned.emailVerified : true,
           studentIds,
           studentId: cleaned.studentId || (studentIds.length > 0 ? studentIds[0] : undefined),
@@ -248,7 +240,7 @@ export function getStore(): AppStoreData {
         };
       });
     } else {
-      parsed.users = DEMO_USERS;
+      parsed.users = DEMO_USERS.map(({ password: _p, passwordHash: _ph, ...u }: any) => u);
     }
 
     if (parsed.students && Array.isArray(parsed.students) && parsed.students.length > 0) {
@@ -307,10 +299,7 @@ export function getStore(): AppStoreData {
       if (FAKE_USER_EMAILS.has(cEmail)) {
         parsed.currentUser = null;
       } else {
-        const { password: _p, ...currClean } = parsed.currentUser as any;
-        if (!currClean.passwordHash && _p) {
-          currClean.passwordHash = hashPasswordSync(_p);
-        }
+        const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, resetPasswordExpires: _re, ...currClean } = parsed.currentUser as any;
         if (currClean.emailVerified === undefined) currClean.emailVerified = true;
         if (!currClean.studentIds && currClean.studentId) {
           currClean.studentIds = [currClean.studentId];
@@ -333,7 +322,7 @@ export function getStore(): AppStoreData {
     console.error('Error loading store from localStorage', e);
     return {
       settings: INITIAL_SETTINGS,
-      users: DEMO_USERS,
+      users: DEMO_USERS.map(({ password: _p, passwordHash: _ph, ...u }: any) => u),
       students: DEMO_STUDENTS,
       attendance: DEMO_ATTENDANCE,
       reviews: DEMO_REVIEWS,
@@ -355,14 +344,14 @@ export function saveStore(data: Partial<AppStoreData>) {
     const current = getStore();
     const updated = { ...current, ...data };
     
-    // Guarantee no raw passwords, reset codes, or sensitive tokens are ever stored in client localStorage
+    // Guarantee no raw passwords, password hashes, reset codes, or sensitive tokens are ever stored in client localStorage
     if (updated.currentUser) {
-      const { password: _p, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanCurrentUser } = updated.currentUser as any;
+      const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanCurrentUser } = updated.currentUser as any;
       updated.currentUser = cleanCurrentUser;
     }
     if (updated.users && Array.isArray(updated.users)) {
       updated.users = updated.users.map((u: any) => {
-        const { password: _p, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanUser } = u;
+        const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, resetPasswordExpires: _re, ...cleanUser } = u;
         return cleanUser;
       });
     }

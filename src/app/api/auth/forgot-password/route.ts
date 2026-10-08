@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import connectToDatabase from '@/lib/mongodb';
 import { UserModel, AuditLogModel } from '@/models';
-import { hashPasswordSync, verifyPassword } from '@/lib/security';
-import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { hashPasswordSync, verifyPassword, isAllowedOrigin } from '@/lib/security';
+import { checkRateLimitAsync, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
+    // 0. CSRF & Origin Allowlist Check
+    if (!isAllowedOrigin(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Untrusted request origin.' },
+        { status: 403 }
+      );
+    }
+
     const clientIp = getClientIp(request);
 
-    // 1. Rate Limiting: 5 requests per 15 minutes per IP
-    const rateCheck = checkRateLimit(`forgot-pwd:${clientIp}`, 5, 15 * 60 * 1000);
+    // 1. Distributed Rate Limiting: 5 requests per 15 minutes per IP
+    const rateCheck = await checkRateLimitAsync(`forgot-pwd:${clientIp}`, 5, 15 * 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {

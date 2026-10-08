@@ -19,28 +19,30 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   // Strict session and role authorization check
   const verifySession = useCallback(async () => {
-    const store = getStore();
-    let user = store.currentUser;
+    let user: User | null = null;
 
-    // If currentUser is not in client localStorage, verify if an active HTTP-only session cookie exists on server
-    if (!user) {
-      try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.success && data.user) {
-            user = data.user;
-            saveStore({ currentUser: user });
-          }
+    // Always verify active session with server-side HTTP-only session cookie
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.success && data.user) {
+          user = data.user;
+          saveStore({ currentUser: user });
         }
-      } catch (err) {
-        console.warn('Portal session check notice:', err);
+      } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+        // Session invalid or expired on server
+        saveStore({ currentUser: null });
       }
+    } catch (err) {
+      console.warn('Portal session check notice:', err);
+      user = null;
     }
 
     if (!user) {
       setIsAuthorized(false);
       setCurrentUser(null);
+      saveStore({ currentUser: null });
       window.location.replace('/login');
       return false;
     }
@@ -50,7 +52,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
     if (pathname.startsWith('/portal/principal') && !['PRINCIPAL', 'OWNER', 'ADMIN'].includes(role)) {
       allowed = false;
-    } else if (pathname.startsWith('/portal/owner') && role !== 'OWNER' && role !== 'PRINCIPAL') {
+    } else if (pathname.startsWith('/portal/owner') && role !== 'OWNER') {
       allowed = false;
     } else if (pathname.startsWith('/portal/admin') && role !== 'ADMIN' && role !== 'OWNER' && role !== 'PRINCIPAL') {
       allowed = false;
@@ -145,7 +147,6 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     if (currentRole === 'PRINCIPAL') {
       return [
         { href: '/portal/principal', label: 'Principal Executive & Fees', icon: <TrendingUp size={18} /> },
-        { href: '/portal/owner', label: 'Owner Financial Audit', icon: <GraduationCap size={18} /> },
         { href: '/portal/admin', label: 'Campus Admin & Ops', icon: <Settings size={18} /> },
         { href: '/portal/admin/users', label: 'Users Directory', icon: <Users size={18} /> },
         { href: '/gallery', label: 'School Events Gallery', icon: <BookOpen size={18} /> },

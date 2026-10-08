@@ -26,10 +26,20 @@ const PROGRAM_LABEL_MAP: Record<string, string> = {
   ALL: 'Preschool Programs',
 };
 
+function cleanWhatsAppField(val?: string, maxLen = 60): string {
+  if (!val || typeof val !== 'string') return '';
+  return val
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[<>{}[\]\\]/g, '')
+    .trim()
+    .slice(0, maxLen);
+}
+
 export function formatWhatsAppMessage(data?: WhatsAppEnquiryData): string {
   // If no data provided or user has NOT explicitly consented to transmitting personal details
   if (!data || !data.hasConsent) {
-    const progLabel = data?.program ? (PROGRAM_LABEL_MAP[data.program] || data.program) : null;
+    const rawProg = cleanWhatsAppField(data?.program, 30);
+    const progLabel = rawProg ? (PROGRAM_LABEL_MAP[rawProg] || rawProg) : null;
     const typeLabel =
       data?.enquiryType === 'CAMPUS_VISIT'
         ? 'schedule a preschool campus visit'
@@ -47,8 +57,9 @@ export function formatWhatsAppMessage(data?: WhatsAppEnquiryData): string {
   }
 
   // User has explicitly checked the consent box to send pre-filled family info
-  const progName = data.program
-    ? (PROGRAM_LABEL_MAP[data.program] || data.program)
+  const rawProg = cleanWhatsAppField(data.program, 30);
+  const progName = rawProg
+    ? (PROGRAM_LABEL_MAP[rawProg] || rawProg)
     : 'Play School / Nursery / LKG / UKG';
 
   const typeDesc =
@@ -56,16 +67,21 @@ export function formatWhatsAppMessage(data?: WhatsAppEnquiryData): string {
       ? 'Campus Visit Request & Admission Enquiry'
       : 'Admission Enquiry';
 
+  const pName = cleanWhatsAppField(data.parentName, 60) || 'Parent';
+  const cName = cleanWhatsAppField(data.childName, 60) || 'Child';
+  const cAge = cleanWhatsAppField(data.childAge, 20) || 'N/A';
+  const phone = cleanWhatsAppField(data.phone, 20) || 'N/A';
+
   const lines = [
     'Hello London Kids Preschool Avalurpet,',
     '',
     `I am submitting a ${typeDesc}:`,
     '',
-    `• Parent Name: ${data.parentName?.trim() || 'Parent'}`,
-    `• Child Name: ${data.childName?.trim() || 'Child'}`,
-    `• Child Age: ${data.childAge?.trim() || 'N/A'}`,
+    `• Parent Name: ${pName}`,
+    `• Child Name: ${cName}`,
+    `• Child Age: ${cAge}`,
     `• Interested Program: ${progName}`,
-    `• Contact Phone: ${data.phone?.trim() || 'N/A'}`,
+    `• Contact Phone: ${phone}`,
     '',
     'Please contact me with admission details and visit scheduling.',
   ];

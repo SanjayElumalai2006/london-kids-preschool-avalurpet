@@ -226,7 +226,7 @@ export default function PhotoUploadDropzone({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleInputChange}
             className="hidden"
           />
@@ -250,8 +250,14 @@ export default function PhotoUploadDropzone({
             <button
               type="button"
               onClick={() => {
-                if (customUrl.trim()) {
-                  onPhotoChange(customUrl.trim());
+                const trimmed = customUrl.trim();
+                if (trimmed) {
+                  const isValid = /^https?:\/\/.+/i.test(trimmed) || /^data:image\/(jpeg|png|webp);base64,/i.test(trimmed);
+                  if (!isValid) {
+                    setErrorMsg('Please enter a valid HTTP/HTTPS image URL or base64 image data URI.');
+                    return;
+                  }
+                  onPhotoChange(trimmed);
                   setSuccessMsg('Photo URL applied!');
                   setTimeout(() => setSuccessMsg(null), 3000);
                 }

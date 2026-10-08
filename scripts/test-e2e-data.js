@@ -50,6 +50,7 @@ function updateCookiesFromResponse(res) {
 async function requestJson(url, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
+    'Origin': BASE_URL,
     ...(options.headers || {}),
   };
 

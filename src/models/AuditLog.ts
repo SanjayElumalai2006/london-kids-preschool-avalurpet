@@ -21,7 +21,7 @@ const AuditLogSchema = new Schema<IAuditLogDocument>(
       type: String,
       enum: [
         'CREATE', 'UPDATE', 'STATUS_CHANGE', 'PASSWORD_RESET', 'ROLE_CHANGE', 'REMOVE', 'RESTORE',
-        'USER_LOGIN', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_RESET_COMPLETED', 'ENQUIRY_SUBMITTED', 'EMAIL_VERIFIED'
+        'USER_LOGIN', 'USER_LOGOUT', 'PASSWORD_RESET_REQUESTED', 'PASSWORD_RESET_COMPLETED', 'ENQUIRY_SUBMITTED', 'EMAIL_VERIFIED'
       ],
       required: true,
     },

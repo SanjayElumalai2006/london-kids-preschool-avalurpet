@@ -224,14 +224,6 @@ export default function PrincipalPortalPage() {
 
         {/* Executive Action Shortcuts */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <Link
-            href="/portal/owner"
-            className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 font-extrabold text-xs flex items-center gap-1.5 border border-purple-200 transition-colors"
-            title="View Owner Financial Audit"
-          >
-            <TrendingUp size={14} className="text-purple-600" />
-            <span>Owner Audit</span>
-          </Link>
 
           <Link
             href="/portal/admin"

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Client-side image processing utility for London Kids Preschool Avalurpet
  * Reads any image file (JPEG, PNG, WebP, HEIC/GIF) and resizes it via an HTML5 canvas
  * into an optimized, lightweight Data URL suitable for localStorage and instant avatars.
@@ -6,8 +6,14 @@
 
 export function processImageFile(file: File, maxDimension = 360, quality = 0.85): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) {
-      reject(new Error('Please select a valid image file (JPEG, PNG, WebP, etc.).'));
+    const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      reject(new Error('Please select a valid image file (JPEG, PNG, WebP). SVGs and executable formats are not allowed.'));
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error('Image file is too large. Maximum allowed size is 5MB.'));
       return;
     }
 

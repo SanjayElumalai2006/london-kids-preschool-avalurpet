@@ -43,28 +43,12 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwdChangeError, setPwdChangeError] = useState('');
 
-  // Active session detection
-  const [existingUser, setExistingUser] = useState<User | null>(null);
-
   // Separate login tabs for Student/Parent vs Staff/Management
   const [loginTab, setLoginTab] = useState<'STUDENT' | 'STAFF'>('STUDENT');
 
-  // Check if user is already signed in on client mount
+  // Ensure clean authentication state on login page mount (requires credentials every time)
   useEffect(() => {
-    const store = getStore();
-    if (store.currentUser) {
-      setExistingUser(store.currentUser);
-    } else {
-      fetch('/api/auth/me', { credentials: 'include' })
-        .then(r => (r.ok ? r.json() : null))
-        .then(data => {
-          if (data?.success && data?.user) {
-            setExistingUser(data.user);
-            saveStore({ currentUser: data.user });
-          }
-        })
-        .catch(() => {});
-    }
+    saveStore({ currentUser: null });
   }, []);
 
   const redirectByRole = (role: UserRole) => {
@@ -331,26 +315,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Active Session Notification */}
-          {existingUser && (
-            <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-center justify-between gap-3 text-xs">
-              <div className="overflow-hidden">
-                <p className="font-extrabold text-amber-900 truncate">
-                  Active Session: {existingUser.name}
-                </p>
-                <span className="inline-block text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded mt-0.5 uppercase">
-                  {existingUser.role} Portal
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => redirectByRole(existingUser.role)}
-                className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-xs shrink-0 shadow-xs cursor-pointer transition-colors"
-              >
-                Go to Portal →
-              </button>
-            </div>
-          )}
 
           {/* Separate Login Tabs for Student/Parent vs Staff/Management */}
           <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-5 border border-slate-200">

@@ -586,6 +586,8 @@ export default function UserManagementView({ callerRole, defaultTab = 'DIRECTORY
         return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
       case 'USER_LOGIN':
         return 'bg-teal-100 text-teal-800 border-teal-300';
+      case 'USER_LOGOUT':
+        return 'bg-slate-100 text-slate-700 border-slate-300';
       case 'PASSWORD_RESET_REQUESTED':
       case 'PASSWORD_RESET_COMPLETED':
         return 'bg-amber-100 text-amber-800 border-amber-300';

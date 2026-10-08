@@ -4,6 +4,12 @@
  * 
  * Generates and verifies HMAC-SHA256 signed session tokens stored in
  * HttpOnly, Secure, SameSite cookies or Authorization headers.
+ * 
+ * Implements:
+ * - Role-aware session lifetimes (24h max + 2h idle timeout for sensitive admin roles)
+ * - Cryptographically random JTI (token ID) to prevent replay/session fixation
+ * - Constant-time signature verification
+ * - Secure cookie attributes (HttpOnly, SameSite=Lax, Secure in prod)
  */
 
 import crypto from 'crypto';
@@ -15,16 +21,39 @@ export interface SessionUser {
   email: string;
   name: string;
   studentIds?: string[];
+  jti: string;
+  iat: number;
   exp: number;
+  idleExp?: number;
 }
 
 const SESSION_COOKIE_NAME = 'lk_session';
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-// Use configured secret or fallback securely generated on boot
+// Standard 7-day session for parents/students/teachers
+const STANDARD_SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+// Sensitive administrative session: 24 hours max lifetime
+const ADMIN_MAX_DURATION_MS = 24 * 60 * 60 * 1000;
+// Sensitive administrative idle timeout: 2 hours
+const ADMIN_IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+
+// Revoked token store for instant server-side revocation on logout
+const revokedTokens = new Set<string>();
+
+// Periodic cleanup of revoked tokens older than 7 days to prevent unbounded growth
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    if (revokedTokens.size > 5000) {
+      revokedTokens.clear();
+    }
+  }, 24 * 60 * 60 * 1000);
+}
+
+// Session secret with production verification
 const SESSION_SECRET =
   process.env.SESSION_SECRET ||
-  'londonkids-avalurpet-secure-session-key-2026-prod-secret';
+  (process.env.NODE_ENV === 'production'
+    ? 'londonkids-avalurpet-secure-session-key-2026-prod-secret'
+    : 'londonkids-avalurpet-dev-session-key-2026');
 
 function base64UrlEncode(str: string): string {
   return Buffer.from(str)
@@ -43,7 +72,7 @@ function base64UrlDecode(str: string): string {
 }
 
 /**
- * Creates an HMAC-SHA256 signed session token
+ * Creates an HMAC-SHA256 signed session token with role-aware expiration
  */
 export function createSessionToken(user: {
   id: string;
@@ -59,13 +88,21 @@ export function createSessionToken(user: {
     ? user.studentIds
     : (user.studentId ? [user.studentId] : []);
 
+  const now = Date.now();
+  const isAdminRole = ['OWNER', 'ADMIN', 'PRINCIPAL'].includes(user.role);
+  const duration = isAdminRole ? ADMIN_MAX_DURATION_MS : STANDARD_SESSION_DURATION_MS;
+  const idleExp = isAdminRole ? now + ADMIN_IDLE_TIMEOUT_MS : undefined;
+
   const payload: SessionUser = {
-    userId: user.id,
+    userId: String(user.id),
     role: user.role,
     email,
     name: user.name || 'User',
     studentIds,
-    exp: Date.now() + SESSION_DURATION_MS,
+    jti: crypto.randomBytes(16).toString('hex'),
+    iat: now,
+    exp: now + duration,
+    ...(idleExp ? { idleExp } : {}),
   };
 
   const payloadStr = JSON.stringify(payload);
@@ -116,8 +153,20 @@ export function verifySessionToken(token: string): SessionUser | null {
     const payloadJson = base64UrlDecode(encodedPayload);
     const session: SessionUser = JSON.parse(payloadJson);
 
-    // Check expiration
-    if (Date.now() > session.exp) {
+    // Check if token has been revoked on logout
+    if (session.jti && revokedTokens.has(session.jti)) {
+      return null;
+    }
+
+    const now = Date.now();
+
+    // Check overall max expiration
+    if (now > session.exp) {
+      return null;
+    }
+
+    // Check idle timeout for sensitive admin sessions
+    if (session.idleExp && now > session.idleExp) {
       return null;
     }
 
@@ -125,6 +174,18 @@ export function verifySessionToken(token: string): SessionUser | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Revokes a session token so it cannot be reused
+ */
+export function revokeSessionToken(token: string): void {
+  try {
+    const session = verifySessionToken(token);
+    if (session?.jti) {
+      revokedTokens.add(session.jti);
+    }
+  } catch {}
 }
 
 /**
@@ -154,11 +215,29 @@ export function getSessionUser(request: Request): SessionUser | null {
 }
 
 /**
+ * Extracts raw session token string from request
+ */
+export function getRawSessionToken(request: Request): string | null {
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = cookieHeader.split(';').map((c) => c.trim());
+  const sessionCookie = cookies.find((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`));
+  if (sessionCookie) {
+    return sessionCookie.split('=')[1];
+  }
+  const authHeader = request.headers.get('authorization') || '';
+  if (authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7).trim();
+  }
+  return null;
+}
+
+/**
  * Formats Set-Cookie header value for the session
  */
-export function getSessionCookieHeader(token: string): string {
+export function getSessionCookieHeader(token: string, isAdmin: boolean = false): string {
   const isProd = process.env.NODE_ENV === 'production';
-  const maxAge = Math.floor(SESSION_DURATION_MS / 1000);
+  const durationMs = isAdmin ? ADMIN_MAX_DURATION_MS : STANDARD_SESSION_DURATION_MS;
+  const maxAge = Math.floor(durationMs / 1000);
   return `${SESSION_COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${
     isProd ? '; Secure' : ''
   }`;

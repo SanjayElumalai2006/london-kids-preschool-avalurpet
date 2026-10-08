@@ -1,18 +1,26 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { UserModel, StudentModel, AuditLogModel } from '@/models';
-import { verifyPassword, hashPasswordSync, needsRehash } from '@/lib/security';
+import { verifyPassword, hashPasswordSync, needsRehash, isAllowedOrigin } from '@/lib/security';
 import { createSessionToken, getSessionCookieHeader } from '@/lib/session';
-import { checkRateLimit, resetRateLimit, getClientIp } from '@/lib/rateLimit';
+import { checkRateLimitAsync, resetRateLimit, getClientIp } from '@/lib/rateLimit';
 import { DEMO_USERS, DEMO_STUDENTS } from '@/lib/initialData';
 
 export async function POST(request: Request) {
   try {
+    // 0. CSRF & Origin Allowlist Check
+    if (!isAllowedOrigin(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: Untrusted request origin.' },
+        { status: 403 }
+      );
+    }
+
     const clientIp = getClientIp(request);
 
-    // 1. Rate Limiting: 10 attempts per 15 mins (50 for localhost/dev)
+    // 1. Distributed Rate Limiting: 10 attempts per 15 mins (50 for localhost/dev)
     const maxAttempts = (process.env.NODE_ENV !== 'production' || clientIp === '127.0.0.1' || clientIp === '::1') ? 50 : 10;
-    const rateCheck = checkRateLimit(`login:${clientIp}`, maxAttempts, 15 * 60 * 1000);
+    const rateCheck = await checkRateLimitAsync(`login:${clientIp}`, maxAttempts, 15 * 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
@@ -194,9 +202,10 @@ export async function POST(request: Request) {
     } catch {}
 
     // 6. Generate Session Token & Cookie
-    resetRateLimit(`login:${clientIp}`);
+    await resetRateLimit(`login:${clientIp}`);
+    const isAdmin = ['OWNER', 'ADMIN', 'PRINCIPAL'].includes(user.role);
     const sessionToken = createSessionToken(user as any);
-    const cookieHeader = getSessionCookieHeader(sessionToken);
+    const cookieHeader = getSessionCookieHeader(sessionToken, isAdmin);
 
     // 7. Sanitize User Record (Never expose passwords or reset codes)
     const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, _id, __v, ...safeUser } = user as any;
