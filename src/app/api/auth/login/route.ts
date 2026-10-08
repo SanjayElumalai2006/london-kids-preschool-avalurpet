@@ -46,103 +46,113 @@ export async function POST(request: Request) {
     const cleanPwd = String(password).trim();
     const inputDigits = cleanInput.replace(/\D/g, '');
 
-    await connectToDatabase();
+    let user: any = null;
+    let isDbConnected = false;
 
-    // Escape regex special characters for safe case-insensitive matching
-    const safeEscaped = cleanInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const caseInsensitiveRegex = new RegExp(`^${safeEscaped}$`, 'i');
+    try {
+      await connectToDatabase();
+      isDbConnected = true;
+    } catch (dbErr) {
+      console.warn('MongoDB connection deferred or unconfigured on Vercel. Falling back to built-in authorized store.');
+    }
 
-    // 2. Locate User in MongoDB:
-    // Check personalEmail, email, employeeId, staffId, admissionId, or user id
-    let user = await UserModel.findOne({
-      $or: [
-        { personalEmail: caseInsensitiveRegex },
-        { email: caseInsensitiveRegex },
-        { employeeId: caseInsensitiveRegex },
-        { staffId: caseInsensitiveRegex },
-        { admissionId: caseInsensitiveRegex },
-        { id: caseInsensitiveRegex },
-      ],
-    }).lean();
+    if (isDbConnected) {
+      // Escape regex special characters for safe case-insensitive matching
+      const safeEscaped = cleanInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const caseInsensitiveRegex = new RegExp(`^${safeEscaped}$`, 'i');
 
-    // If not matched directly on User, check if the identifier is a Student Admission Number or Student ID
-    if (!user) {
-      const student = await StudentModel.findOne({
+      // 2. Locate User in MongoDB:
+      // Check personalEmail, email, employeeId, staffId, admissionId, or user id
+      user = await UserModel.findOne({
         $or: [
-          { admissionNo: caseInsensitiveRegex },
+          { personalEmail: caseInsensitiveRegex },
+          { email: caseInsensitiveRegex },
+          { employeeId: caseInsensitiveRegex },
+          { staffId: caseInsensitiveRegex },
+          { admissionId: caseInsensitiveRegex },
           { id: caseInsensitiveRegex },
         ],
       }).lean();
 
-      if (student) {
-        // Resolve linked parent/student user
-        const parentSearch: any[] = [];
-        if (student.parentId) parentSearch.push({ id: student.parentId });
-        if (student.id) {
-          parentSearch.push({ studentIds: student.id });
-          parentSearch.push({ studentId: student.id });
-        }
-        if (student.parentEmail) {
-          const safeEmail = student.parentEmail.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          parentSearch.push({ personalEmail: new RegExp(`^${safeEmail}$`, 'i') });
-          parentSearch.push({ email: new RegExp(`^${safeEmail}$`, 'i') });
-        }
-        if (student.parentPhone) {
-          const parentDigits = student.parentPhone.replace(/\D/g, '');
-          if (parentDigits.length >= 10) {
-            parentSearch.push({ phone: new RegExp(parentDigits.slice(-10)) });
+      // If not matched directly on User, check if the identifier is a Student Admission Number or Student ID
+      if (!user) {
+        const student = await StudentModel.findOne({
+          $or: [
+            { admissionNo: caseInsensitiveRegex },
+            { id: caseInsensitiveRegex },
+          ],
+        }).lean();
+
+        if (student) {
+          // Resolve linked parent/student user
+          const parentSearch: any[] = [];
+          if (student.parentId) parentSearch.push({ id: student.parentId });
+          if (student.id) {
+            parentSearch.push({ studentIds: student.id });
+            parentSearch.push({ studentId: student.id });
+          }
+          if (student.parentEmail) {
+            const safeEmail = student.parentEmail.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            parentSearch.push({ personalEmail: new RegExp(`^${safeEmail}$`, 'i') });
+            parentSearch.push({ email: new RegExp(`^${safeEmail}$`, 'i') });
+          }
+          if (student.parentPhone) {
+            const parentDigits = student.parentPhone.replace(/\D/g, '');
+            if (parentDigits.length >= 10) {
+              parentSearch.push({ phone: new RegExp(parentDigits.slice(-10)) });
+            }
+          }
+
+          if (parentSearch.length > 0) {
+            user = await UserModel.findOne({ $or: parentSearch }).lean();
           }
         }
+      }
 
-        if (parentSearch.length > 0) {
-          user = await UserModel.findOne({ $or: parentSearch }).lean();
-        }
+      // Support phone number search if 10+ digits provided
+      if (!user && inputDigits.length >= 10) {
+        const allUsers = await UserModel.find({}).lean();
+        user = allUsers.find((u: any) => {
+          const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+          return uPhoneDigits.endsWith(inputDigits.slice(-10));
+        }) as any;
       }
     }
 
-    // Support phone number search if 10+ digits provided
-    if (!user && inputDigits.length >= 10) {
-      const allUsers = await UserModel.find({}).lean();
-      user = allUsers.find((u: any) => {
-        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
-        return uPhoneDigits.endsWith(inputDigits.slice(-10));
-      }) as any;
-    }
-
-    // Fallback to DEMO_USERS and DEMO_STUDENTS if DB collection is completely empty
+    // Fallback to DEMO_USERS and DEMO_STUDENTS if DB collection is empty or DB is offline
     if (!user) {
-      const count = await UserModel.countDocuments();
-      if (count === 0) {
-        const demoStudent = DEMO_STUDENTS.find((s: any) =>
-          (s.admissionNo && s.admissionNo.toLowerCase() === cleanInput) ||
-          (s.id && s.id.toLowerCase() === cleanInput)
+      const demoStudent = DEMO_STUDENTS.find((s: any) =>
+        (s.admissionNo && s.admissionNo.toLowerCase() === cleanInput) ||
+        (s.id && s.id.toLowerCase() === cleanInput)
+      );
+
+      user = DEMO_USERS.find((u: any) => {
+        const uPersonal = (u.personalEmail || '').toLowerCase();
+        const uEmail = (u.email || '').toLowerCase();
+        const uEmpId = (u.employeeId || '').toLowerCase();
+        const uStaffId = ((u as any).staffId || '').toLowerCase();
+        const uAdmId = ((u as any).admissionId || '').toLowerCase();
+        const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
+        const matchesStudent = demoStudent && (
+          u.id === demoStudent.parentId ||
+          (u.studentIds && u.studentIds.includes(demoStudent.id)) ||
+          (u.personalEmail && demoStudent.parentEmail && u.personalEmail.toLowerCase() === demoStudent.parentEmail.toLowerCase())
         );
+        return (
+          uPersonal === cleanInput ||
+          uEmail === cleanInput ||
+          uEmpId === cleanInput ||
+          uStaffId === cleanInput ||
+          uAdmId === cleanInput ||
+          matchesStudent ||
+          (inputDigits.length >= 10 && uPhoneDigits.endsWith(inputDigits.slice(-10)))
+        );
+      }) as any;
 
-        user = DEMO_USERS.find((u: any) => {
-          const uPersonal = (u.personalEmail || '').toLowerCase();
-          const uEmail = (u.email || '').toLowerCase();
-          const uEmpId = (u.employeeId || '').toLowerCase();
-          const uStaffId = ((u as any).staffId || '').toLowerCase();
-          const uAdmId = ((u as any).admissionId || '').toLowerCase();
-          const uPhoneDigits = (u.phone || '').replace(/\D/g, '');
-          const matchesStudent = demoStudent && (
-            u.id === demoStudent.parentId ||
-            (u.studentIds && u.studentIds.includes(demoStudent.id)) ||
-            (u.personalEmail && demoStudent.parentEmail && u.personalEmail.toLowerCase() === demoStudent.parentEmail.toLowerCase())
-          );
-          return (
-            uPersonal === cleanInput ||
-            uEmail === cleanInput ||
-            uEmpId === cleanInput ||
-            uStaffId === cleanInput ||
-            uAdmId === cleanInput ||
-            matchesStudent ||
-            (inputDigits.length >= 10 && uPhoneDigits.endsWith(inputDigits.slice(-10)))
-          );
-        }) as any;
-
-        // Auto-seed demo users
-        if (user) {
+      // Auto-seed demo users if DB is connected but empty
+      if (isDbConnected && user) {
+        const count = await UserModel.countDocuments().catch(() => 1);
+        if (count === 0) {
           await UserModel.insertMany(DEMO_USERS).catch(() => {});
         }
       }
@@ -181,7 +191,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Automatic Password Hash Migration to Bcrypt
-    if (needsRehash(storedCredential)) {
+    if (isDbConnected && needsRehash(storedCredential)) {
       try {
         const upgradedBcryptHash = hashPasswordSync(cleanPwd);
         await UserModel.updateOne(
@@ -194,12 +204,14 @@ export async function POST(request: Request) {
     }
 
     // 5. Update Last Login Timestamp
-    try {
-      await UserModel.updateOne(
-        { id: user.id },
-        { $set: { lastLogin: new Date().toISOString() } }
-      );
-    } catch {}
+    if (isDbConnected) {
+      try {
+        await UserModel.updateOne(
+          { id: user.id },
+          { $set: { lastLogin: new Date().toISOString() } }
+        );
+      } catch {}
+    }
 
     // 6. Generate Session Token & Cookie
     await resetRateLimit(`login:${clientIp}`);
@@ -211,19 +223,21 @@ export async function POST(request: Request) {
     const { password: _p, passwordHash: _ph, resetPasswordCode: _rc, _id, __v, ...safeUser } = user as any;
 
     // 8. Safe Audit Log (No credentials logged)
-    try {
-      await AuditLogModel.create({
-        id: `aud-${Date.now()}`,
-        action: 'USER_LOGIN',
-        targetUserId: user.id,
-        targetUserName: user.name,
-        targetUserRole: user.role,
-        performedBy: user.id,
-        performedByName: user.name,
-        details: `Successful login by ${user.role} (${user.name}) from ${clientIp}`,
-        timestamp: new Date().toISOString(),
-      });
-    } catch {}
+    if (isDbConnected) {
+      try {
+        await AuditLogModel.create({
+          id: `aud-${Date.now()}`,
+          action: 'USER_LOGIN',
+          targetUserId: user.id,
+          targetUserName: user.name,
+          targetUserRole: user.role,
+          performedBy: user.id,
+          performedByName: user.name,
+          details: `Successful login by ${user.role} (${user.name}) from ${clientIp}`,
+          timestamp: new Date().toISOString(),
+        });
+      } catch {}
+    }
 
     const response = NextResponse.json({
       success: true,

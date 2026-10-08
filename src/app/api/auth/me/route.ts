@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import { UserModel } from '@/models';
 import { getSessionUser } from '@/lib/session';
+import { DEMO_USERS } from '@/lib/initialData';
 
 export async function GET(request: Request) {
   try {
@@ -13,8 +14,17 @@ export async function GET(request: Request) {
       );
     }
 
-    await connectToDatabase();
-    const user = await UserModel.findOne({ id: session.userId }).lean();
+    let user: any = null;
+    try {
+      await connectToDatabase();
+      user = await UserModel.findOne({ id: session.userId }).lean();
+    } catch {
+      // Database offline/unreachable fallback
+    }
+
+    if (!user) {
+      user = DEMO_USERS.find((u: any) => u.id === session.userId) || null;
+    }
 
     if (!user) {
       return NextResponse.json(

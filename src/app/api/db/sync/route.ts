@@ -97,9 +97,77 @@ export async function GET(request: Request) {
       );
     }
 
-    await connectToDatabase();
+    let isDbConnected = false;
+    try {
+      await connectToDatabase();
+      isDbConnected = true;
+    } catch {
+      console.warn('Database offline or unconfigured on Vercel; falling back to scoped demo records.');
+    }
+
     const userRole = session.role;
     const parentLinkedIds = session.studentIds || [];
+
+    if (!isDbConnected) {
+      let offlineStudents: any[] = [];
+      let offlineAttendance: any[] = [];
+      let offlineReviews: any[] = [];
+      let offlineActivities: any[] = [];
+      let offlineResults: any[] = [];
+      let offlineInvoices: any[] = [];
+      let offlineNotices: any[] = [];
+      let offlineEnquiries: any[] = [];
+      let offlineUsers: any[] = [];
+      let offlineAuditLogs: any[] = [];
+
+      if (userRole === 'PARENT' || userRole === 'STUDENT') {
+        offlineStudents = DEMO_STUDENTS.filter((s) => parentLinkedIds.includes(s.id));
+        offlineAttendance = DEMO_ATTENDANCE.filter((a) => parentLinkedIds.includes(a.studentId));
+        offlineReviews = DEMO_REVIEWS.filter((r) => parentLinkedIds.includes(r.studentId));
+        offlineResults = DEMO_RESULTS.filter((r) => parentLinkedIds.includes(r.studentId));
+        offlineInvoices = DEMO_INVOICES.filter((i) => parentLinkedIds.includes(i.studentId));
+        offlineActivities = DEMO_ACTIVITIES;
+        offlineNotices = DEMO_NOTICES;
+        offlineUsers = DEMO_USERS.filter((u) => u.id === session.userId);
+      } else if (userRole === 'STAFF' || userRole === 'TEACHER') {
+        offlineStudents = DEMO_STUDENTS;
+        offlineAttendance = DEMO_ATTENDANCE;
+        offlineReviews = DEMO_REVIEWS;
+        offlineActivities = DEMO_ACTIVITIES;
+        offlineResults = DEMO_RESULTS;
+        offlineNotices = DEMO_NOTICES;
+        offlineUsers = DEMO_USERS.filter((u) => ['TEACHER', 'STAFF', 'ADMIN', 'PRINCIPAL'].includes(u.role));
+      } else {
+        offlineStudents = DEMO_STUDENTS;
+        offlineAttendance = DEMO_ATTENDANCE;
+        offlineReviews = DEMO_REVIEWS;
+        offlineActivities = DEMO_ACTIVITIES;
+        offlineResults = DEMO_RESULTS;
+        offlineInvoices = DEMO_INVOICES;
+        offlineNotices = DEMO_NOTICES;
+        offlineEnquiries = DEMO_ENQUIRIES;
+        offlineUsers = DEMO_USERS;
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          settings: INITIAL_SETTINGS,
+          users: cleanDocs(offlineUsers),
+          students: cleanDocs(offlineStudents),
+          attendance: cleanDocs(offlineAttendance),
+          reviews: cleanDocs(offlineReviews),
+          activities: cleanDocs(offlineActivities),
+          results: cleanDocs(offlineResults),
+          invoices: cleanDocs(offlineInvoices),
+          notices: cleanDocs(offlineNotices),
+          enquiries: cleanDocs(offlineEnquiries),
+          auditLogs: cleanDocs(offlineAuditLogs),
+          gallery: cleanDocs(INITIAL_GALLERY_PHOTOS),
+        },
+        fetchedAt: new Date().toISOString(),
+      });
+    }
 
     // 2. School Settings
     let settingsDoc = await SchoolSettingsModel.findOne({ key: 'main_settings' }).lean();
@@ -279,7 +347,14 @@ export async function POST(request: Request) {
       );
     }
 
-    await connectToDatabase();
+    let isDbConnected = false;
+    try {
+      await connectToDatabase();
+      isDbConnected = true;
+    } catch {
+      console.warn('Database offline or unconfigured on Vercel; skipping database write.');
+    }
+
     const body = await request.json().catch(() => ({}));
     const userRole = session.role;
     const parentLinkedIds = session.studentIds || [];
@@ -360,7 +435,9 @@ export async function POST(request: Request) {
       if (body.gallery) tasks.push(upsertMany(EventPhotoModel, body.gallery));
     }
 
-    await Promise.all(tasks);
+    if (isDbConnected) {
+      await Promise.all(tasks);
+    }
 
     return NextResponse.json({
       success: true,

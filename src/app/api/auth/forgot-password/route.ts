@@ -4,6 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { UserModel, AuditLogModel } from '@/models';
 import { hashPasswordSync, verifyPassword, isAllowedOrigin } from '@/lib/security';
 import { checkRateLimitAsync, getClientIp } from '@/lib/rateLimit';
+import { DEMO_USERS } from '@/lib/initialData';
 
 export async function POST(request: Request) {
   try {
@@ -40,14 +41,29 @@ export async function POST(request: Request) {
     }
 
     const trimmedEmail = String(email).trim().toLowerCase();
-    await connectToDatabase();
+    let isDbConnected = false;
+    let user: any = null;
 
-    const user = await UserModel.findOne({
-      $or: [
-        { personalEmail: trimmedEmail },
-        { email: trimmedEmail },
-      ],
-    });
+    try {
+      await connectToDatabase();
+      isDbConnected = true;
+      user = await UserModel.findOne({
+        $or: [
+          { personalEmail: trimmedEmail },
+          { email: trimmedEmail },
+        ],
+      });
+    } catch {
+      console.warn('Database offline or unconfigured on Vercel; checking built-in accounts.');
+    }
+
+    if (!user) {
+      user = DEMO_USERS.find(
+        (u: any) =>
+          (u.personalEmail && u.personalEmail.toLowerCase() === trimmedEmail) ||
+          (u.email && u.email.toLowerCase() === trimmedEmail)
+      );
+    }
 
     // 2. Stage 1: Requesting a Password Reset Code
     if (!newPassword && !resetCode) {
